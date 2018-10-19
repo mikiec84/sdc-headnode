@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 set -o errexit
@@ -36,6 +36,7 @@ usbcpy="$(svcprop -p 'joyentfs/usb_copy_path' svc:/system/filesystem/smartdc:def
 mounted="false"
 hashfile="/platform/i86pc/amd64/boot_archive.hash"
 menulst="${usbmnt}/boot/grub/menu.lst"
+loader_conf="${usbmnt}/boot/loader.conf"
 
 function onexit
 {
@@ -45,6 +46,42 @@ function onexit
     fi
 
     echo "==> Done!"
+}
+
+#
+# XXX - need to implement this
+#
+function config_loader
+{
+    echo "==> XXX Loader configuration not implemented"
+}
+
+function config_grub
+{
+    echo "==> Creating new GRUB configuration"
+    if [[ -z "${dryrun}" ]]; then
+        rm -f ${usbmnt}/boot/grub/menu.lst
+        tomenulst=">> ${menulst}"
+    fi
+    while read input; do
+        set -- $input
+        if [[ "$1" = "#PREV" ]]; then
+            _thisversion="${current_version}"
+        else
+            _thisversion="${version}"
+        fi
+        output=$(echo "$input" | sed \
+            -e "s|/PLATFORM/|/os/${version}/platform/|" \
+            -e "s|/PREV_PLATFORM/|/os/${current_version}/platform/|" \
+            -e "s|PREV_PLATFORM_VERSION|${current_version}|" \
+            -e "s|^#PREV ||")
+        set -- $output
+        if [[ "$1" = "module" ]] && [[ "${2##*.}" = "hash" ]] && \
+            [[ ! -f "${usbcpy}/os/${_thisversion}${hashfile}" ]]; then
+            continue
+        fi
+        eval echo '${output}' "${tomenulst}"
+    done < "${menulst}.tmpl"
 }
 
 # -U is a private option to bypass cnapi update during upgrade.
@@ -80,30 +117,14 @@ if [[ ! -d ${usbmnt}/os/${version} ]]; then
     exit 1
 fi
 
-echo "==> Creating new menu.lst"
-if [[ -z "${dryrun}" ]]; then
-    rm -f ${usbmnt}/boot/grub/menu.lst
-    tomenulst=">> ${menulst}"
+if [[ -f ${loader_conf} ]]; then
+	config_loader
+elif [[ -f ${menulst} ]]; then
+	config_grub
+else
+	echo "===> FATAL no boot loader configuration found"
+	exit 1
 fi
-while read input; do
-    set -- $input
-    if [[ "$1" = "#PREV" ]]; then
-        _thisversion="${current_version}"
-    else
-        _thisversion="${version}"
-    fi
-    output=$(echo "$input" | sed \
-        -e "s|/PLATFORM/|/os/${version}/platform/|" \
-        -e "s|/PREV_PLATFORM/|/os/${current_version}/platform/|" \
-        -e "s|PREV_PLATFORM_VERSION|${current_version}|" \
-        -e "s|^#PREV ||")
-    set -- $output
-    if [[ "$1" = "module" ]] && [[ "${2##*.}" = "hash" ]] && \
-        [[ ! -f "${usbcpy}/os/${_thisversion}${hashfile}" ]]; then
-        continue
-    fi
-    eval echo '${output}' "${tomenulst}"
-done < "${menulst}.tmpl"
 
 # If upgrading, skip cnapi update, we're done now.
 [ $UPGRADE -eq 1 ] && exit 0

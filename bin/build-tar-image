@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 if [[ -n "$TRACE" ]]; then
@@ -170,7 +170,7 @@ function create_directories
     mkdir -p ${STAGE}
 }
 
-function generate_grub_menu
+function generate_loader_config
 {
     local unit=
     local serial_dev
@@ -186,46 +186,17 @@ function generate_grub_menu
     local DR_VAL='#DR '
     [[ ${enable_dr} == "true" ]] && DR_VAL=''
 
-    echo "==> Generating grub menu"
+    echo "==> Generating boot loader configuration "
 
     [[ -z "${serial_dev}" ]] && serial_dev=ttyb
+
     [[ -z "${console}" ]] && console="serial"
-    [[ -z "${default_boot_option}" ]] && default_boot_option=0
 
     #
-    # This section describes the serial-dev and console parameters.  These
-    # values may be overridden in build.spec{,.local}.
+    # XXX - add comments describing how menu.rc and loader.conf
+    # templates
     #
-    # serial-dev is the serial console device on the target system.  It
-    # defaults to ttyb (illumos) aka COM2 (FreeDOS), which is legacy I/O
-    # port 2f8 interrupt 3.
-    #
-    # console is used to set the default value of the GRUB variable
-    # "os_console", which selects the post-boot console device.  It may
-    # be one of "serial", in which case the serial device specified by
-    # serial-dev is used, or "text" in which case an attached keyboard
-    # and VGA device is used.  For backward compatibility, "graphics"
-    # and "vga" are aliases for "text".  In addition, an explicit serial
-    # device may be specified, in which case its value will override
-    # serial-dev.  This is almost certainly not what you want, since it
-    # will mean that post-boot I/O will be to/from a different device
-    # than was used during boot.  Note that the operator can change the
-    # post-boot console by modifying the os_console GRUB variable before
-    # booting.
-    #
-    # When the system boots, GRUB will display its output to the VGA
-    # device, if one is present, and the device specified by serial-dev,
-    # if it exists.  It will also accept input from either an attached
-    # keyboard or serial-dev.  Once a boot selection is made, the value
-    # of the os_console GRUB variable is passed to the operating system
-    # and used as the system console, unless a network boot is
-    # performed.  In that case, the parameters received from the HN will
-    # override all console selection made here or in the GRUB
-    # environment; this may be modified for each CN using CNAPI.
-    #
-    # By default, serial-dev is "ttyb" and console is "serial".  We try
-    # other devices in turn if the preferred one does not exist.  Only
-    # one device will actually be used; see the GRUB help for details.
+    # By default, serial-dev is "ttyb" and console is "serial".
     #
     case "${serial_dev}" in
     ttya)
@@ -259,15 +230,11 @@ function generate_grub_menu
         ;;
     esac
 
-    serial_string="--speed=115200 --unit=${unit} --word=8 --parity=no --stop=1"
-
-    sed \
-        -e "s/^#SERIAL/serial ${serial_string}/" \
-        -e "s/DEFAULT_CONSOLE/${console}/g" \
-        -e "s/^default.*$/default ${default_boot_option}/" \
-        -e "s/^#DR /${DR_VAL}/" \
-        boot/grub/menu.lst.tmpl \
-        > ${STAGE}/boot/grub/menu.lst.tmpl
+    #
+    # XXX - add code to handle ENABLE_DR and CONSOLE macros
+    #
+    cp -f boot/loader.conf ${STAGE}/boot/loader.conf
+    cp -f boot/forth/menu.rc.tmpl ${STAGE}/boot/forth/menu.rc.tmpl
 }
 
 function copy_base
@@ -462,10 +429,28 @@ function copy_platform
     root_pw=$(cat ${STAGE}/private/root.password.${LIVEIMG_VERSION})
     echo "Root password is: '${root_pw}'"
 
-    # Create the menu.lst file
-    cat ${STAGE}/boot/grub/menu.lst.tmpl | sed \
-        -e "s|/PLATFORM/|/os/${LIVEIMG_VERSION}/platform/|" \
-        > ${STAGE}/boot/grub/menu.lst
+    #
+    # By default, loader on illumos expects the "platform" directory to be at
+    # to be a top-level directory in the root filesystem and sets the location
+    # of the kernel to be relative to that.  On Triton, the platform directory
+    # exists under /os/${LIVEIMG_VERSION}, so we override it by passing the
+    # full path to the kernel in the "bootfile" loader environment variable.
+    #
+    # XXX - need to figure out how to handle rollback
+    #
+    local defplatdir="/os/${LIVEIMG_VERSION}"
+    echo "bootfile=\"$defplatdir/platform/i86pc/kernel/amd64/unix\"" \
+        >> ${STAGE}/boot/loader.conf
+    echo "boot_archive_name=\"$defplatdir/platform/i86pc/amd64/boot_archive\"" \
+        >> ${STAGE}/boot/loader.conf
+    echo "boot_archive.hash_name=\"$defplatdir/platform/i86pc/amd64/boot_archive.hash\"" \
+        >> ${STAGE}/boot/loader.conf
+
+    # Create the menu.rc file
+    rm -f ${STAGE}/boot/forth/menu.rc
+    cat ${STAGE}/boot/forth/menu.rc.tmpl | sed \
+        -e "s|#PLATFORM|${LIVEIMG_VERSION}|" \
+        > ${STAGE}/boot/forth/menu.rc
 
     rm -f ${LOGDIR}/latest
     ln -s ${LOGFILE} ${LOGDIR}/latest
@@ -714,7 +699,7 @@ test_rootperms
 create_directories
 load_buildspec
 copy_base
-generate_grub_menu
+generate_loader_config
 copy_platform
 copy_sdcadm
 copy_agentsshar

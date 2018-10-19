@@ -184,23 +184,34 @@ function boot_setup
 
     [[ -z "${console}" ]] && console=text
 
-    if [[ ! -f /mnt/usbkey/boot/grub/menu.lst.tmpl ]]; then
-        fatal "No GRUB menu found."
-    else
+    if [[ -f /mnt/usbkey/boot/loader.conf ]]; then
+        #
+        # XXX - add code to handle Loader configuration
+        #
+        echo "Loader configuration not implemented, yet"
+    elif [[ -f /mnt/usbkey/boot/grub/menu.lst.tmpl ]]; then
+        #
+	# Configure GRUB to boot the first menu item, by default.
+	# Also set the os_console variable which ultimately gets passed
+	# as a boot argument to the kernel.
+	#
         sed -e "s/^default.*/default 1/" \
             -e "s/^variable os_console.*/variable os_console ${console}/" \
             < /mnt/usbkey/boot/grub/menu.lst.tmpl \
             > /tmp/menu.lst.tmpl
         mv -f /tmp/menu.lst.tmpl /mnt/usbkey/boot/grub/menu.lst.tmpl
+
+        if [[ -f /mnt/usbkey/boot/grub/menu.lst ]]; then
+            sed -e "s/^default.*/default 1/" \
+                -e "s/^variable os_console.*/variable os_console ${console}/" \
+                < /mnt/usbkey/boot/grub/menu.lst \
+                > /tmp/menu.lst
+            mv -f /tmp/menu.lst /mnt/usbkey/boot/grub/menu.lst
+        fi
+    else
+        fatal "No Loader or GRUB configuration found."
     fi
 
-    if [[ -f /mnt/usbkey/boot/grub/menu.lst ]]; then
-        sed -e "s/^default.*/default 1/" \
-            -e "s/^variable os_console.*/variable os_console ${console}/" \
-            < /mnt/usbkey/boot/grub/menu.lst \
-            > /tmp/menu.lst
-        mv -f /tmp/menu.lst /mnt/usbkey/boot/grub/menu.lst
-    fi
 }
 
 SETUP_FILE=/var/lib/setup.json

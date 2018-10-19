@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 #
@@ -20,6 +20,7 @@ usbmnt="/mnt/$(svcprop -p 'joyentfs/usb_mountpoint' ${mntsvc})"
 usbcp="$(svcprop -p 'joyentfs/usb_copy_path' ${mntsvc})"
 menu="${usbmnt}/boot/grub/menu.lst"
 menutmpl="${menu}.tmpl"
+loader_conf="${usbmnt}/boot/loader.conf"
 
 function usage
 {
@@ -39,6 +40,24 @@ function fatal
 {
     echo "`basename $0`: $*" >&2 
     exit 1
+}
+
+#
+# XXX - need to implement this
+#
+function config_loader
+{
+    echo "==> XXX Loader configuration not implemented"
+}
+
+function config_grub
+{
+    sed -e "s/^variable os_console.*/variable os_console ${console}/" \
+        < ${menu} > /tmp/menu.lst.$$
+    mv -f /tmp/menu.lst.$$ ${menu}
+    sed -e "s/^variable os_console.*/variable os_console ${console}/" \
+        < ${menutmpl} > /tmp/menu.lst.tmpl.$$
+    mv -f /tmp/menu.lst.tmpl.$$ ${menutmpl}
 }
 
 if [[ -z "$1" ]]; then
@@ -66,12 +85,13 @@ mount | grep "^${usbmnt}" >/dev/null 2>&1 || bash $usbcp/scripts/mount-usb.sh
 mount | grep "^${usbmnt}" >/dev/null 2>&1 || fatal "${usbmnt} is not mounted"
 
 echo -n "Setting default OS console to ${console} ... "
-sed -e "s/^variable os_console.*/variable os_console ${console}/" \
-    < ${menu} > /tmp/menu.lst.$$
-mv -f /tmp/menu.lst.$$ ${menu}
-sed -e "s/^variable os_console.*/variable os_console ${console}/" \
-    < ${menutmpl} > /tmp/menu.lst.tmpl.$$
-mv -f /tmp/menu.lst.tmpl.$$ ${menutmpl}
+if [[ -f ${loader_conf} ]]; then
+	config_loader
+elif [[ -f ${menu} ]]; then
+	config_grub
+else
+	fatal "No boot loader configuration found!"
+fi
 echo "done."
 
 echo -n "Unmounting USB key ... "

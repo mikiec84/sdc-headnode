@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright 2017 Joyent, Inc.
+# Copyright 2018 Joyent, Inc.
 #
 
 ROOT=$(cd $(dirname $0)/../; pwd)
@@ -110,6 +110,8 @@ TEMPLATE_IMG="$ROOT/cache/file.platimages$PLATFORM_SUFFIX.tgz"
 
 if [[ "$PLATFORM" == "SunOS" ]]; then
     SUCMD='pfexec'
+elif [[ "$PLATFORM" == "Darwin" ]]; then
+    SUCMD='sudo'
 elif [[ "$PLATFORM" == "Linux" ]]; then
     SUCMD='sudo'
     # Parted is required to find the partition offset in the image.
@@ -147,20 +149,30 @@ function unpack_image
     echo "done."
 }
 
+#
+# The USB Image uses the GPT partitioning scheme and has the following slices:
+#
+# slice 1 - EFI System Partition (PCFS)
+# slice 2 - Boot partition (no filesystem)
+# slice 3 - Root partition (PCFS)
+# slice 9 - reserved
+#
+# For our purposes, we want to mount slice 3, as that's where we'll be
+# installing the platform image and other required software.
+#
 function mount_image
 {
     echo -n "==> Mounting new USB image... "
     if [[ "$PLATFORM" == "Darwin" ]]; then
-        # REVIEW - [ blah ] ?
         [ ! -d ${ROOT}/cache/tmp_volumes ] && mkdir -p ${ROOT}/cache/tmp_volumes
-        hdiutil attach $IMG_TMP_DIR/$$.${OUTPUT_IMG} \
-            >/tmp/output.hdiattach.$$ \
-            -mountrandom ${ROOT}/cache/tmp_volumes 2>&1
-        LOOPBACK=`grep "FDisk_partition_scheme" /tmp/output.hdiattach.$$ \
+        ${SUCMD} hdiutil attach -nomount -imagekey diskimage-class=CRawDiskImage \
+	    $IMG_TMP_DIR/$$.${OUTPUT_IMG} >/tmp/output.hdiattach.$$ 2>&1
+        LOOPBACK=`grep "GUID_partition_scheme" /tmp/output.hdiattach.$$ \
             | awk '{ print $1 }'`
-        MNT_DIR=`grep "Windows_FAT_32" /tmp/output.hdiattach.$$ \
-            | awk '{ print $3 }'`
+        MNT_DIR=$(mktemp -d ${ROOT}/cache/tmp_volumes/root.XXXX)
+	${SUCMD} mount -t msdos ${LOOPBACK}s3 $MNT_DIR
     elif [[ "$PLATFORM" == "Linux" ]]; then
+        # XXX - might need to fix this up
         MNT_DIR="/tmp/sdc_image.$$"
         mkdir -p "$MNT_DIR"
         LOOPBACK=$IMG_TMP_DIR/$$.${OUTPUT_IMG}
@@ -169,9 +181,11 @@ function mount_image
         ${SUCMD} mount -o "loop,offset=${OFFSET},uid=${EUID},gid=${GROUPS[0]}" \
             "${LOOPBACK}" "${MNT_DIR}"
     else
+        # XXX - this now assumes support for labelled LOFI devices so won't work
+	# in a non-global zone
         ${SUCMD} mkdir -p ${MNT_DIR}
-        LOOPBACK=$(${SUCMD} lofiadm -a $IMG_TMP_DIR/$$.${OUTPUT_IMG})
-        ${SUCMD} mount -F pcfs -o foldcase ${LOOPBACK}:c ${MNT_DIR}
+        LOOPBACK=$(${SUCMD} lofiadm -la $IMG_TMP_DIR/$$.${OUTPUT_IMG})
+        ${SUCMD} mount -F pcfs -o foldcase ${LOOPBACK}s3 ${MNT_DIR}
     fi
     echo "($IMG_TMP_DIR/coal.$$/$$.${OUTPUT_IMG} mounted on ${MNT_DIR}) done."
 }
@@ -235,7 +249,9 @@ function cleanup
         CLEANED=1
         if [[ -n ${LOOPBACK} ]]; then
             if [[ "$PLATFORM" == "Darwin" ]]; then
-                hdiutil detach ${MNT_DIR} || true
+	        ${SUCMD} umount $MNT_DIR
+		rm -rf $MNT_DIR
+                ${SUCMD} hdiutil detach ${LOOPBACK}
             elif [[ "$PLATFORM" == "Linux" ]]; then
                 ${SUCMD} umount "${MNT_DIR}" || /usr/bin/true
                 rm -rf "${MNT_DIR}"
