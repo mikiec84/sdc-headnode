@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 var mod_fs = require('fs');
@@ -281,16 +281,23 @@ locate_pcfs_devices(callback)
         }
 
         var pcfs_devices = [];
+	var devpaths = [];
 
         /*
-         * Run 'fstyp' against the first partition (p1) of each device, looking
-         * for the USB key FAT filesystem:
+         * Older MBR/GRUB-based USB keys will have a single primary partition 
+	 * containing the root filesystem.  Newer, GPT/Loader-based USB keys
+	 * will have multiple slices with the root partition at slice 2.  We
+	 * don't currently have a good way of knowing in advance which style of
+	 * USB key we're dealing with, so we search for both possibilities.
          */
+	for (var i = 0; i < disks.length; i++) {
+		var dsk = disks[i];
+		devpaths.push('/dev/dsk/' + dsk.dsk_device + 'p1');
+		devpaths.push('/dev/dsk/' + dsk.dsk_device + 's2');
+	}
         mod_vasync.forEachParallel({
-            inputs: disks,
-            func: function (dsk, next) {
-                var path = '/dev/dsk/' + dsk.dsk_device + 'p1';
-
+            inputs: devpaths,
+            func: function (path, next) {
                 lib_oscmds.fstyp(path, function (_err, type) {
                     if (_err) {
                         next(_err);
