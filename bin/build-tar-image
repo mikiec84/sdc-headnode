@@ -234,6 +234,10 @@ function generate_loader_config
     # XXX - add code to handle ENABLE_DR and CONSOLE macros
     #
     cp -f boot/loader.conf ${STAGE}/boot/loader.conf
+
+    # FIXME: right place for this?
+    mkdir -p ${STAGE}/boot/forth/
+
     cp -f boot/forth/menu.rc.tmpl ${STAGE}/boot/forth/menu.rc.tmpl
 }
 
