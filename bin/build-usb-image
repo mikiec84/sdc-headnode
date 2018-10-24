@@ -185,7 +185,7 @@ function mount_image
 	# in a non-global zone
         ${SUCMD} mkdir -p ${MNT_DIR}
         LOOPBACK=$(${SUCMD} lofiadm -la $IMG_TMP_DIR/$$.${OUTPUT_IMG})
-        ${SUCMD} mount -F pcfs -o foldcase ${LOOPBACK}s3 ${MNT_DIR}
+        ${SUCMD} mount -F pcfs -o foldcase ${LOOPBACK/p0/s2} ${MNT_DIR}
     fi
     echo "($IMG_TMP_DIR/coal.$$/$$.${OUTPUT_IMG} mounted on ${MNT_DIR}) done."
 }
