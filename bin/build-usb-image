@@ -172,11 +172,10 @@ function mount_image
         MNT_DIR=$(mktemp -d ${ROOT}/cache/tmp_volumes/root.XXXX)
 	${SUCMD} mount -t msdos ${LOOPBACK}s3 $MNT_DIR
     elif [[ "$PLATFORM" == "Linux" ]]; then
-        # XXX - might need to fix this up
         MNT_DIR="/tmp/sdc_image.$$"
         mkdir -p "$MNT_DIR"
         LOOPBACK=$IMG_TMP_DIR/$$.${OUTPUT_IMG}
-        OFFSET=$(parted -m "${LOOPBACK}" unit B print | grep fat32 \
+        OFFSET=$(parted -m "${LOOPBACK}" unit B print | grep fat32:root \
             | cut -f2 -d: | sed 's/.$//')
         ${SUCMD} mount -o "loop,offset=${OFFSET},uid=${EUID},gid=${GROUPS[0]}" \
             "${LOOPBACK}" "${MNT_DIR}"
