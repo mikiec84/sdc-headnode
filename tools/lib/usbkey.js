@@ -281,20 +281,20 @@ locate_pcfs_devices(callback)
         }
 
         var pcfs_devices = [];
-	var devpaths = [];
+        var devpaths = [];
 
         /*
-         * Older MBR/GRUB-based USB keys will have a single primary partition 
-	 * containing the root filesystem.  Newer, GPT/Loader-based USB keys
-	 * will have multiple slices with the root partition at slice 2.  We
-	 * don't currently have a good way of knowing in advance which style of
-	 * USB key we're dealing with, so we search for both possibilities.
+         * Older MBR/GRUB-based USB keys will have a single primary partition
+         * containing the root filesystem.  Newer, GPT/Loader-based USB keys
+         * will have multiple slices with the root partition at slice 2.  We
+         * don't currently have a good way of knowing in advance which style of
+         * USB key we're dealing with, so we search for both possibilities.
          */
-	for (var i = 0; i < disks.length; i++) {
-		var dsk = disks[i];
-		devpaths.push('/dev/dsk/' + dsk.dsk_device + 'p1');
-		devpaths.push('/dev/dsk/' + dsk.dsk_device + 's2');
-	}
+        for (var i = 0; i < disks.length; i++) {
+                var dsk = disks[i];
+                devpaths.push('/dev/dsk/' + dsk.dsk_device + 'p1');
+                devpaths.push('/dev/dsk/' + dsk.dsk_device + 's2');
+        }
         mod_vasync.forEachParallel({
             inputs: devpaths,
             func: function (path, next) {

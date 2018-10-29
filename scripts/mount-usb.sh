@@ -31,8 +31,8 @@ readonly partitions=("p1" "s2")
 for disk in ${alldisks}; do
     for part in ${partitions[@]}; do
         if [[ `/usr/sbin/fstyp /dev/dsk/${disk}${part}` == 'pcfs' ]]; then
-            /usr/sbin/mount -F pcfs -o foldcase,noatime /dev/dsk/${disk}${part} \
-                ${usbmnt};
+            /usr/sbin/mount -F pcfs -o foldcase,noatime \
+                /dev/dsk/${disk}${part} ${usbmnt};
             if [[ $? == "0" ]]; then
                 if [[ ! -f ${usbmnt}/.joyliveusb ]]; then
                     /usr/sbin/umount ${usbmnt};

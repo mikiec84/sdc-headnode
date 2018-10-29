@@ -447,6 +447,7 @@ function copy_platform
         >> ${STAGE}/boot/loader.conf
     echo "boot_archive_name=\"$defplatdir/platform/i86pc/amd64/boot_archive\"" \
         >> ${STAGE}/boot/loader.conf
+    # BASHSTYLED
     echo "boot_archive.hash_name=\"$defplatdir/platform/i86pc/amd64/boot_archive.hash\"" \
         >> ${STAGE}/boot/loader.conf
 

@@ -78,7 +78,8 @@ function mount_root_image
     echo -n "==> Mounting new USB image... "
     if [[ "$PLATFORM" == "Darwin" ]]; then
         [ ! -d ${ROOT}/cache/tmp_volumes ] && mkdir -p ${ROOT}/cache/tmp_volumes
-        ${SUCMD} hdiutil attach -nomount -imagekey diskimage-class=CRawDiskImage \
+        ${SUCMD} hdiutil attach -nomount \
+            -imagekey diskimage-class=CRawDiskImage \
             $IMG_TMP_DIR/${OUTPUT_IMG} >/tmp/output.hdiattach.$$ 2>&1
         LOOPBACK=`grep "GUID_partition_scheme" /tmp/output.hdiattach.$$ \
             | awk '{ print $1 }'`
@@ -136,4 +137,3 @@ function unmount_root_image
             if=$IMG_TMP_DIR/rootfs.img of=$IMG_TMP_DIR/${OUTPUT_IMG}
     fi
 }
-
