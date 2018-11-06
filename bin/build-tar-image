@@ -181,6 +181,7 @@ function generate_loader_config
     default_boot_option=$(build_spec default-boot-option)
 
     # Feature flag for HEAD-2093
+    # XXX - add code to handle ENABLE_DR
     local enable_dr
     enable_dr=$(build_spec enable-disaster-recovery)
     local DR_VAL='#DR '
@@ -190,50 +191,25 @@ function generate_loader_config
 
     [[ -z "${serial_dev}" ]] && serial_dev=ttyb
 
-    [[ -z "${console}" ]] && console="serial"
+    [[ -z "${console}" ]] && console="ttyb"
 
-    #
-    # XXX - add comments describing how menu.rc and loader.conf
-    # templates
-    #
-    # By default, serial-dev is "ttyb" and console is "serial".
-    #
-    case "${serial_dev}" in
-    ttya)
-        unit=0,1,2,3
-        ;;
-    ttyb)
-        unit=1,0,2,3
-        ;;
-    ttyc)
-        unit=2,1,0,3
-        ;;
-    ttyd)
-        unit=3,1,0,2
-        ;;
-    *)
-        fatal "Unknown serial device: ${serial_dev}"
-        ;;
-    esac
+    [[ ${console} = "serial" ]] && console="${serial_dev}"
+
+    cp -f boot/loader.conf ${STAGE}/boot/loader.conf
 
     case "${console}" in
-    serial)
-        console=${serial_dev}
-        ;;
     ttya|ttyb|ttyc|ttyd)
+        echo "console=\"${console},text\"" >>${STAGE}/boot/loader.conf
+        echo "os_console=\"${console}\"" >>${STAGE}/boot/loader.conf
         ;;
     text|graphics|vga)
-        console=text
+        echo "console=\"text,${serial_dev}\"" >>${STAGE}/boot/loader.conf
+        echo "os_console=\"text\"" >>${STAGE}/boot/loader.conf
         ;;
     *)
         fatal "Unknown default console device: ${console}"
         ;;
     esac
-
-    #
-    # XXX - add code to handle ENABLE_DR and CONSOLE macros
-    #
-    cp -f boot/loader.conf ${STAGE}/boot/loader.conf
 
     # FIXME: right place for this?
     mkdir -p ${STAGE}/boot/forth/
