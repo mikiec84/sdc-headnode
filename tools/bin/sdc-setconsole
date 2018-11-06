@@ -81,9 +81,14 @@ if [[ ! -d $usbmnt ]]; then
     mkdir $usbmnt || fatal "could not make $usbmnt"
 fi
 
-mount | grep "^${usbmnt}" >/dev/null 2>&1 || bash $usbcp/scripts/mount-usb.sh
-mount | grep "^${usbmnt}" >/dev/null 2>&1 || fatal "${usbmnt} is not mounted"
+mnt_status=$(/opt/smartdc/bin/sdc-usbkey status)
+[ $? != 0 ] && fatal "failed to get USB key status"
+if [[ $mnt_status = "unmounted" ]]; then
+    /opt/smartdc/bin/sdc-usbkey mount
+    [ $? != 0 ] && fatal "failed to mount USB key"
+fi
 
+# XXX - change to look at MBR version
 echo -n "Setting default OS console to ${console} ... "
 if [[ -f ${loader_conf} ]]; then
 	config_loader
@@ -95,7 +100,9 @@ fi
 echo "done."
 
 echo -n "Unmounting USB key ... "
-umount "${usbmnt}"
+/opt/smartdb/bin/sdc-usbkey unmount
+[ $? != 0 ] && fatal "failed to unmount USB key"
+
 echo "done."
 
 exit 0

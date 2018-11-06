@@ -435,7 +435,7 @@ The failure may have occurred in one of the zones being installed, rather than i
 Development in this repo is typically to alter setup and bootstrap of the system. Setup scripts reside on a USB key typically mounted at `/mnt/usbkey`, and are copied onto the headnode at `/usbkey`.
 
 To test changes to setup procedures without a complete rebuild, you can:
-  - mount the usbkey (if required) using `/usbkey/scripts/mount-usb.sh`
+  - mount the usbkey (if required) using `sdc-usbkey mount`
   - copy your modifications over the existing scripts
   - run `sdc-factoryreset` to re-run the setup process
 

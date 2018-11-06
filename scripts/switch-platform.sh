@@ -15,34 +15,30 @@ set -o pipefail
 #export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 #set -o xtrace
 
+function fatal()
+{
+        printf "%s\n" "$1" 1>&2
+        exit 1
+}
+
+function usage()
+{
+    print -u2 "Usage: $0 <platform buildstamp>"
+    print -u2 "(eg. '$0 20110318T170209Z')"
+    exit 1
+}
+
 if [[ "$1" = "-n" ]]; then
     dryrun=true
     shift
 fi
 
-version="${1^^}"
-if [[ -z "${version}" ]]; then
-    echo "Usage: $0 <platform buildstamp>"
-    echo "(eg. '$0 20110318T170209Z')"
-    exit 1
-fi
-
-current_version=$(uname -v | cut -d '_' -f 2)
-
-# BEGIN BASHSTYLED
-usbmnt="/mnt/$(svcprop -p 'joyentfs/usb_mountpoint' svc:/system/filesystem/smartdc:default)"
-usbcpy="$(svcprop -p 'joyentfs/usb_copy_path' svc:/system/filesystem/smartdc:default)"
-# END BASHSTYLED
-mounted="false"
-hashfile="/platform/i86pc/amd64/boot_archive.hash"
-menulst="${usbmnt}/boot/grub/menu.lst"
-loader_conf="${usbmnt}/boot/loader.conf"
-
 function onexit
 {
     if [[ ${mounted} == "true" ]]; then
         echo "==> Unmounting USB Key"
-        umount /mnt/usbkey
+        /opt/smartdc/bin/sdc-usbkey unmount
+        [ $? != 0 ] && fatal "failed to unmount USB key"
     fi
 
     echo "==> Done!"
@@ -84,46 +80,58 @@ function config_grub
     done < "${menulst}.tmpl"
 }
 
+version=$1
+[[ -z ${version} ]] && usage
+
 # -U is a private option to bypass cnapi update during upgrade.
 UPGRADE=0
 while getopts "U" opt
 do
     case "$opt" in
-        U) UPGRADE=1;;
-        *) echo "invalid option"
-           exit 1
-           ;;
+        U) UPGRADE=1 ;;
+        *)
+            print -u2 "invalid option"
+            usage
+            ;;
     esac
 done
 shift $(($OPTIND - 1))
 
-version=$1
-if [[ -z ${version} ]]; then
-    echo "Usage: $0 <platform buildstamp>"
-    echo "(eg. '$0 20110318T170209Z')"
-    exit 1
-fi
+current_version=$(uname -v | cut -d '_' -f 2)
 
-if [[ -z $(mount | grep ^${usbmnt}) ]]; then
+# BEGIN BASHSTYLED
+usbmnt="/mnt/$(svcprop -p 'joyentfs/usb_mountpoint' svc:/system/filesystem/smartdc:default)"
+usbcpy="$(svcprop -p 'joyentfs/usb_copy_path' svc:/system/filesystem/smartdc:default)"
+# END BASHSTYLED
+mounted="false"
+hashfile="/platform/i86pc/amd64/boot_archive.hash"
+menulst="${usbmnt}/boot/grub/menu.lst"
+loader_conf="${usbmnt}/boot/loader.conf"
+
+mnt_status=$(/opt/smartdc/bin/sdc-usbkey status)
+[ $? != 0 ] && fatal "failed to get USB key status"
+if [[ $mnt_status = "unmounted" ]]; then
     echo "==> Mounting USB key"
-    /usbkey/scripts/mount-usb.sh
+    /opt/smartdc/bin/sdc-usbkey mount
+    [ $? != 0 ] && fatal "failed to mount USB key"
     mounted="true"
 fi
 
 trap onexit EXIT
 
-if [[ ! -d ${usbmnt}/os/${version} ]]; then
-    echo "==> FATAL ${usbmnt}/os/${version} does not exist."
-    exit 1
-fi
+[[ ! -d ${usbmnt}/os/${version} ]] && \
+    fatal "==> FATAL ${usbmnt}/os/${version} does not exist."
 
+
+#
+# XXX - Change this logic to look at MBR version
+#
 if [[ -f ${loader_conf} ]]; then
 	config_loader
 elif [[ -f ${menulst} ]]; then
 	config_grub
 else
-	echo "===> FATAL no boot loader configuration found"
-	exit 1
+	fatal "===> FATAL no boot loader configuration found"
 fi
 
 # If upgrading, skip cnapi update, we're done now.
@@ -136,10 +144,8 @@ load_sdc_config
 uuid=`curl -s http://${CONFIG_cnapi_admin_ips}/servers | \
     json -a headnode uuid | nawk '{if ($1 == "true") print $2}' 2>/dev/null`
 
-if [[ -z "${uuid}" ]]; then
-    echo "==> FATAL unable to determine headnode UUID from cnapi."
-    exit 1
-fi
+[[ -z "${uuid}" ]] && \
+    fatal "==> FATAL unable to determine headnode UUID from cnapi."
 
 if [[ -n "${dryrun}" ]]; then
 	doit="echo"
