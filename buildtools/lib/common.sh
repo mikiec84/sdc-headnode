@@ -90,7 +90,7 @@ function mount_root_image
         MNT_DIR="/tmp/sdc_image.$$"
         mkdir -p "$MNT_DIR"
         LOOPBACK=$IMG_TMP_DIR/${OUTPUT_IMG}
-        OFFSET=$(parted -m "${LOOPBACK}" unit B print | grep fat32:root \
+        OFFSET=$(parted -s -m "${LOOPBACK}" unit B print | grep fat32:root \
             | cut -f2 -d: | sed 's/.$//')
         ${SUCMD} mount -o "loop,offset=${OFFSET},uid=${EUID},gid=${GROUPS[0]}" \
             "${LOOPBACK}" "${MNT_DIR}"
