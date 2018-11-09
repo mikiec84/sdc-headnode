@@ -215,6 +215,7 @@ function generate_loader_config
     mkdir -p ${STAGE}/boot/forth/
 
     cp -f boot/forth/menu.rc.tmpl ${STAGE}/boot/forth/menu.rc.tmpl
+    cp -f boot/forth/menu.rc.noroll.tmpl ${STAGE}/boot/forth/menu.rc.noroll.tmpl
 }
 
 function copy_base
@@ -429,7 +430,7 @@ function copy_platform
 
     # Create the menu.rc file
     rm -f ${STAGE}/boot/forth/menu.rc
-    cat ${STAGE}/boot/forth/menu.rc.tmpl | sed \
+    cat ${STAGE}/boot/forth/menu.rc.noroll.tmpl | sed \
         -e "s|#PLATFORM|${LIVEIMG_VERSION}|" \
         > ${STAGE}/boot/forth/menu.rc
 
