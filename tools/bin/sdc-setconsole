@@ -15,13 +15,6 @@
 #  sdc-setconsole <console>
 #
 
-mntsvc="svc:/system/filesystem/smartdc:default"
-usbmnt="/mnt/$(svcprop -p 'joyentfs/usb_mountpoint' ${mntsvc})"
-usbcp="$(svcprop -p 'joyentfs/usb_copy_path' ${mntsvc})"
-menu="${usbmnt}/boot/grub/menu.lst"
-menutmpl="${menu}.tmpl"
-loader_conf="${usbmnt}/boot/loader.conf"
-
 function usage
 {
     cat <<USAGE
@@ -42,22 +35,23 @@ function fatal
     exit 1
 }
 
-#
-# XXX - need to implement this
-#
 function config_loader
 {
-    echo "==> XXX Loader configuration not implemented"
+    local readonly tmpconf=$(mktemp /tmp/loader.conf.XXXX)
+
+    cat $loader_conf | grep -v os_console > $tmpconf
+    echo "os_console=\"${console}\"" >> $tmpconf
+    mv -f $tmpconf $loader_conf
 }
 
 function config_grub
 {
     sed -e "s/^variable os_console.*/variable os_console ${console}/" \
-        < ${menu} > /tmp/menu.lst.$$
-    mv -f /tmp/menu.lst.$$ ${menu}
+        < ${grub_menu} > /tmp/menu.lst.$$
+    mv -f /tmp/menu.lst.$$ ${grub_menu}
     sed -e "s/^variable os_console.*/variable os_console ${console}/" \
-        < ${menutmpl} > /tmp/menu.lst.tmpl.$$
-    mv -f /tmp/menu.lst.tmpl.$$ ${menutmpl}
+        < ${grub_menutmpl} > /tmp/menu.lst.tmpl.$$
+    mv -f /tmp/menu.lst.tmpl.$$ $grub_{menutmpl}
 }
 
 if [[ -z "$1" ]]; then
@@ -77,22 +71,18 @@ graphics|vga)
     ;;
 esac
 
-if [[ ! -d $usbmnt ]]; then
-    mkdir $usbmnt || fatal "could not make $usbmnt"
-fi
+usbmnt=$(/opt/smartdc/bin/sdc-usbkey mount)
+[ $? != 0 ] && fatal "failed to mount USB key"
 
-mnt_status=$(/opt/smartdc/bin/sdc-usbkey status)
-[ $? != 0 ] && fatal "failed to get USB key status"
-if [[ $mnt_status = "unmounted" ]]; then
-    /opt/smartdc/bin/sdc-usbkey mount
-    [ $? != 0 ] && fatal "failed to mount USB key"
-fi
+readonly grub_menu="${usbmnt}/boot/grub/menu.lst"
+readonly grub_menutmpl="${grub_menu}.tmpl"
+readonly loader_conf="${usbmnt}/boot/loader.conf"
 
 # XXX - change to look at MBR version
 echo -n "Setting default OS console to ${console} ... "
 if [[ -f ${loader_conf} ]]; then
 	config_loader
-elif [[ -f ${menu} ]]; then
+elif [[ -f ${grub_menu} ]]; then
 	config_grub
 else
 	fatal "No boot loader configuration found!"
@@ -100,7 +90,7 @@ fi
 echo "done."
 
 echo -n "Unmounting USB key ... "
-/opt/smartdb/bin/sdc-usbkey unmount
+/opt/smartdc/bin/sdc-usbkey unmount
 [ $? != 0 ] && fatal "failed to unmount USB key"
 
 echo "done."
