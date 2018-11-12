@@ -44,12 +44,77 @@ function onexit
     echo "==> Done!"
 }
 
-#
-# XXX - need to implement this
-#
 function config_loader
 {
-    echo "==> XXX Loader configuration not implemented"
+    local readonly kernel="i86pc/kernel/amd64/unix"
+    local readonly archive="i86pc/amd64/boot_archive"
+    local readonly tmpconf=$(mktemp /tmp/loader.conf.XXXX)
+    local readonly tmpmenu=$(mktemp /tmp/menu.rc.XXXX)
+
+    echo "==> Updating Loader configuration"
+
+    cp ${usbmnt}/boot/loader.conf.tmpl $tmpconf
+
+    echo "bootfile=\"/os/$version/platform/$kernel\"" >> $tmpconf
+    echo "boot_archive_name=\"/os/$version/platform/$archive\"" >> $tmpconf
+    echo "boot_archive.hash_name=\"/os/$version/platform/${archive}.hash\"" \
+        >> $tmpconf
+
+    #
+    # Check whether the currently running (soon-to-be previous) version still
+    # exists on the USB key, as it's possible that we're being run because
+    # we were assigned a new version and the current version was deleted.  If
+    # that's the case, look for the next most recent PI and use that as the
+    # default rollback target.  If there's no other options - i.e. there's now
+    # only one PI remaining on the key - then we don't create a rollback entry
+    # at all.
+    #
+    local rollback_vers=$current_version
+    if [[ ! -d $usbmnt/os/$rollback_vers ]]; then
+        rollback_vers=$(ls -1 $usbmnt/os | tr "[:lower:]" "[:upper:]" | \
+            grep -v $version | sort | tail -1)
+    fi
+
+    if [[ -n $rollback_vers ]]; then
+        echo "prev-platform=\"/os/$rollback_vers/platform/$kernel\"" \
+            >> $tmpconf
+        echo "prev-archive=\"/os/$rollback_vers/platform/$archive\"" \
+            >> $tmpconf
+        echo "prev-hash=\"/os/$rollback_vers/platform/${archive}.hash\"" \
+            >> $tmpconf
+    fi
+
+    #
+    # Preserve Loader and OS console settings from the previous config.
+    #
+    grep ^console= ${usbmnt}/boot/loader.conf >> $tmpconf
+    grep ^os_console= ${usbmnt}/boot/loader.conf >> $tmpconf
+
+    #
+    # Expand the macros for PLATFORM and PREV_PLATFORM (if one exists) in
+    # menu.rc into the actual platform image versions.
+    #
+    if [[ -n $rollback_vers ]]; then
+        cat ${usbmnt}/boot/forth/menu.rc.tmpl | \
+            sed -e "s|#PLATFORM|${version}|" | \
+            sed -e "s|#PREV_PLATFORM|${rollback_vers}|" >> $tmpmenu
+    else
+        cat ${usbmnt}/boot/forth/menu.rc.noroll.tmpl | \
+            sed -e "s|#PLATFORM|${version}|" >> $tmpmenu
+    fi
+
+    #
+    # If it's a dryrun, just print the new Loader configuration.  Otherwise,
+    # copy the new configuration into place.
+    #
+    if [[ -n "${dryrun}" ]]; then
+        cat $tmpconf
+    else
+        cp -f $tmpconf ${usbmnt}/boot/loader.conf
+        cp -f $tmpmenu ${usbmnt}/boot/forth/menu.rc
+    fi
+
+    rm -f $tmpconf $tmpmenu
 }
 
 function config_grub
