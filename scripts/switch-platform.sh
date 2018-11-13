@@ -61,13 +61,35 @@ function config_loader
         >> $tmpconf
 
     #
-    # Check whether the currently running (soon-to-be previous) version still
-    # exists on the USB key, as it's possible that we're being run because
-    # we were assigned a new version and the current version was deleted.  If
-    # that's the case, look for the next most recent PI and use that as the
-    # default rollback target.  If there's no other options - i.e. there's now
-    # only one PI remaining on the key - then we don't create a rollback entry
-    # at all.
+    # Check whether the currently running (soon-to-be previous) version 
+    # exists on the USB key.  This should always be the case on production
+    # bits as we set the rollback target to the currently running platform and
+    # sdcadm will prevent the user from removing the currently running platform
+    # (though it can be overridden with the --force option).  The more likely
+    # place we'd see this is with developer platform images where there can
+    # be skew between the platform buildstamp and the version stamp that gets
+    # encoded into unix.  When that happens, the buildstamp of the currently
+    # running platform may not match the output of "uname -v".  So this code
+    # attempts to handle these (admittedly rare) corner cases to ensure that:
+    #
+    # 1) The boot entry for the rollback target always points to a valid path
+    #    on the USB key
+    # 2) Or if we've found ourselves in a situation where there is only one
+    #    platform on the USB key, then we don't create a rollback boot entry
+    #    at all.
+    #
+    # XXX - the more likely place this could occur is after a
+    # "sdcadm platform remove" - for example, consider the case where a CN
+    # has a USB key with two platform images (A and B)
+    #
+    # CN is currently running image A.
+    # CN is then assigned image B.
+    # Image A gets set as the rollback target in the boot loder config
+    # CN reboots and is now running image B.
+    #
+    # At his point there is nothing to prevent the admin from removing image A.
+    # which would invalidate the rollback boot menu entry.  So we have some
+    # more work to do in sdcadm to fully handle these cases.
     #
     local rollback_vers=$current_version
     if [[ ! -d $usbmnt/os/$rollback_vers ]]; then
