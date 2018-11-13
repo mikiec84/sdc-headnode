@@ -204,7 +204,7 @@ parse_mount_optstr(optstr)
 
 /*
  * The kernel makes the list of mounted filesystems available in /etc/mnttab,
- * as documnted in the manual page mnttab(4).  Attempt to locate an entry in
+ * as documented in the manual page mnttab(4).  Attempt to locate an entry in
  * this file for a given mount point.  If an entry is found, it will be
  * returned as an object; if not, Boolean(false) will be returned instead.
  */
@@ -269,6 +269,82 @@ get_mount_info(mount, callback)
     });
 }
 
+/*
+ * Figure out if the given disk is potentially the USB key we're looking for.
+ * Such a key will have an MBR in one of two forms: either a legacy BIOS image,
+ * with a grub-legacy version of 3.2 at 0x3e; or a loader(5)-produced MBR with a
+ * major version of 2 at offset 0xfa.
+ *
+ * The former has the root pcfs at partition 1, the latter at (GPT) partition 2.
+ * Both should have the standard MBR magic of 0xaa55.
+ *
+ * As this is all we have to go on, we'll later make sure it really is a USB key
+ * via check_for_marker_file().
+ */
+function
+inspect_device(pcfs_devices, disk, callback)
+{
+    var COMPAT_VERSION_MAJOR = 3;
+    var COMPAT_VERSION_MINOR = 2;
+    var IMAGE_MAJOR = 2;
+
+    mod_assert.func(callback, 'callback');
+    mod_assert.string(disk, 'disk');
+
+    mod_fs.open('/dev/dsk/' + disk + 'p0', 'r', function (err, fd) {
+        if (err) {
+            callback();
+            return;
+        }
+
+        var buffer = new Buffer(512);
+        var part = '/dev/dsk/' + disk;
+
+        mod_fs.read(fd, buffer, 0, buffer.length, 0,
+          function (err, nr_read, buffer) {
+            if (err) {
+                mod_fs.close(fd, function() {
+                    callback();
+                });
+                return;
+            }
+
+            if ((buffer[0x1fe] | buffer[0x1ff] << 8) !== 0xaa55) {
+                mod_fs.close(fd, function() {
+                    callback();
+                });
+                return;
+            }
+
+            if (buffer[0x3e] === COMPAT_VERSION_MAJOR &&
+                buffer[0x3f] === COMPAT_VERSION_MINOR) {
+                part += 'p1';
+            } else if (buffer[0xfa] === IMAGE_MAJOR) {
+                part += 's2';
+            } else {
+                mod_fs.close(fd, function() {
+                    callback();
+                });
+                return;
+            }
+
+            lib_oscmds.fstyp(part, function (err, type) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+
+                if (type === 'pcfs')
+                    pcfs_devices.push(part);
+
+                mod_fs.close(fd, function() {
+                    callback();
+                });
+            });
+        });
+    });
+}
+
 function
 locate_pcfs_devices(callback)
 {
@@ -281,35 +357,11 @@ locate_pcfs_devices(callback)
         }
 
         var pcfs_devices = [];
-        var devpaths = [];
 
-        /*
-         * Older MBR/GRUB-based USB keys will have a single primary partition
-         * containing the root filesystem.  Newer, GPT/Loader-based USB keys
-         * will have multiple slices with the root partition at slice 2.  We
-         * don't currently have a good way of knowing in advance which style of
-         * USB key we're dealing with, so we search for both possibilities.
-         */
-        for (var i = 0; i < disks.length; i++) {
-                var dsk = disks[i];
-                devpaths.push('/dev/dsk/' + dsk.dsk_device + 'p1');
-                devpaths.push('/dev/dsk/' + dsk.dsk_device + 's2');
-        }
         mod_vasync.forEachParallel({
-            inputs: devpaths,
-            func: function (path, next) {
-                lib_oscmds.fstyp(path, function (_err, type) {
-                    if (_err) {
-                        next(_err);
-                        return;
-                    }
-
-                    if (type === 'pcfs' && pcfs_devices.indexOf(path) === -1) {
-                        pcfs_devices.push(path);
-                    }
-
-                    next();
-                });
+            inputs: disks,
+            func: function (disk, next) {
+                inspect_device(pcfs_devices, disk.dsk_device, next);
             }
         }, function (_err) {
             if (_err) {
