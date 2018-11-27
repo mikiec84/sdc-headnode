@@ -27,26 +27,21 @@ set menuset_name1="main"
 set mainmenu_init[1]="init_boot"
 
 set mainmenu_caption[1]="Compute Node (PXE)"
-set mainansi_caption[1]="^[1mC^[mompute Node (PXE) ^[1m[Enter]^[m"
+set mainansi_caption[1]="Compute Node (PXE)"
 set mainmenu_command[1]="ipxe_boot"
-\ keycode set by init_boot
 
 set mainmenu_caption[2]="Boot #PLATFORM"
-set mainansi_caption[2]="Boot ^[1mL^[mive 64-bit"
+set mainansi_caption[2]="Boot #PLATFORM"
 set mainmenu_command[2]="boot"
 
 set mainmenu_caption[3]="Rollback to #PREV_PLATFORM"
-set mainansi_caption[3]="Boot ^[1mL^[mive 64-bit"
+set mainansi_caption[3]="Rollback to #PREV_PLATFORM"
 set mainmenu_command[3]="rollback_boot"
 
-set mainmenu_caption[4]="Legacy Firmware Upgrade Mode"
-set mainansi_caption[4]="Boot ^[1mL^[mive 64-bit"
-set mainmenu_command[4]="boot"
-
-set mainmenu_caption[5]="[Esc]ape to loader prompt"
-set mainmenu_command[5]="goto_prompt"
-set mainmenu_keycode[5]=27
-set mainansi_caption[5]="^[1mEsc^[mape to loader prompt"
+set mainmenu_caption[4]="[Esc]ape to loader prompt"
+set mainmenu_command[4]="goto_prompt"
+set mainmenu_keycode[4]=27
+set mainansi_caption[4]="^[1mEsc^[mape to loader prompt"
 
 \ Enable built-in "Reboot" trailing menuitem
 \ NOTE: appears before menu_options if configured
@@ -56,12 +51,12 @@ set mainmenu_reboot
 \ Enable "Options:" separator. When set to a numerical value (1-8), a visual
 \ separator is inserted before that menuitem number.
 \
-set mainmenu_options=7
+set mainmenu_options=6
 
-set mainmenu_caption[7]="Configure Boot [O]ptions..."
-set mainmenu_command[7]="2 goto_menu"
-set mainmenu_keycode[7]=111
-set mainansi_caption[7]="Configure Boot ^[1mO^[mptions..."
+set mainmenu_caption[6]="Configure Boot [O]ptions..."
+set mainmenu_command[6]="2 goto_menu"
+set mainmenu_keycode[6]=111
+set mainansi_caption[6]="Configure Boot ^[1mO^[mptions..."
 
 \
 \ BOOT OPTIONS MENU
@@ -116,7 +111,7 @@ set optionstoggled_ansi[6]="Disaster ^[1mR^mecovery........ ^[32;7mOn^[m"
 \ Enable automatic booting (add ``autoboot_delay=N'' to loader.conf(5) to
 \ customize the timeout; default is 10-seconds)
 \
-set menu_timeout_command="boot"
+set menu_timeout_command="ipxe_boot"
 
 \ Include optional elements defined in a local file
 \

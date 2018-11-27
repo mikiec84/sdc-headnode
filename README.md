@@ -32,8 +32,8 @@ To create a VM for local development work – commonly called 'coal' (Cloud On 
     images of all services. This can take quite some time. If this fails,
     please see the 'Build Prerequisites' and/or 'Debugging' sections below.
 
-  - open `coal-master-TIMESTAMP-gSHA.vmwarevm`, select 'Live 64-bit' at the
-    grub menu, and work through the interactive installer referring to [this
+  - open `coal-master-TIMESTAMP-gSHA.vmwarevm`, select Option 2 at the
+    Loader menu, and work through the interactive installer referring to [this
     documentation][coal-setup.md]. **Important**: while many answers are arbitrary, the
     networking questions require specific values for local development.
 
@@ -108,7 +108,7 @@ In the example above,
     See <https://kb.vmware.com/s/article/1003746> for mapping of Virtual
     Hardware Version to VMware releases. Note that `vmware_version=7`,
     corresponding to hardware version 11, is required for Bhyve VMs to work.
-  - `"default-boot-option"` selects the default grub boot option; a value of
+  - `"default-boot-option"` selects the default Loader boot option; a value of
     `1` selects the second entry in the menu: regular headnode boot
 
 #### Build Artefacts
