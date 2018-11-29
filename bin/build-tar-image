@@ -195,8 +195,7 @@ function generate_loader_config
 
     [[ ${console} = "serial" ]] && console="${serial_dev}"
 
-    cp -f boot/loader.conf.tmpl ${STAGE}/boot/loader.conf.tmpl
-    cp -f boot/loader.conf.tmpl ${STAGE}/boot/loader.conf
+    cp -f ${STAGE}/boot/loader.conf.tmpl ${STAGE}/boot/loader.conf
 
     case "${console}" in
     ttya|ttyb|ttyc|ttyd)
@@ -211,11 +210,6 @@ function generate_loader_config
         fatal "Unknown default console device: ${console}"
         ;;
     esac
-
-    # FIXME: right place for this?
-    mkdir -p ${STAGE}/boot/forth/
-
-    cp -f boot/forth/menu.rc ${STAGE}/boot/forth/
 }
 
 function copy_base
@@ -260,6 +254,9 @@ function copy_base
 
     echo "==> Copying in default/"
     cp -r default ${STAGE}/default
+
+    echo "==> Copying in boot/"
+    cp -r boot/ ${STAGE}/boot
 
     echo "==> Copying in LICENSE"
     cp -r LICENSE ${STAGE}/LICENSE
