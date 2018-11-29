@@ -121,7 +121,7 @@ function config_loader
             sed -e "s|#PLATFORM|${version}|" | \
             sed -e "s|#PREV_PLATFORM|${rollback_vers}|" >> $tmpmenu
     else
-        cat ${usbmnt}/boot/forth/menu.rc.noroll.tmpl | \
+        cat ${usbmnt}/boot/forth/menu.rc.tmpl | \
             sed -e "s|#PLATFORM|${version}|" >> $tmpmenu
     fi
 
