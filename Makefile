@@ -123,7 +123,8 @@ TOOLS_LIB_FILES = \
 
 TOOLS_BOOT_FILES = \
 	boot/default.ipxe \
-	boot/ipxe.lkrn
+	boot/ipxe.lkrn \
+	etc/version/ipxe
 
 TOOLS_SHARE_FILES = \
 	servicebundle/pubkey.key \
