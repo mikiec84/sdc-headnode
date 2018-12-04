@@ -255,21 +255,11 @@ function copy_base
     echo "==> Copying in default/"
     cp -r default ${STAGE}/default
 
-    echo "==> Copying in boot/"
-    cp -r boot/ ${STAGE}/boot
+    echo "==> Copying in usbkey/contents/"
+    cp -r proto/opt/smartdc/share/usbkey/contents/* ${STAGE}
 
     echo "==> Copying in LICENSE"
     cp -r LICENSE ${STAGE}/LICENSE
-
-    echo "==> Extracting platform boot bundle"
-    if ! (cd ${STAGE} && ${TAR} -xzf ${platboot_path}); then
-        fatal "Failed to extract boot bundle"
-    fi
-
-    echo "==> Extracting sdcboot bundle"
-    if ! (cd ${STAGE} && ${TAR} -xzf ${sdcboot_path}); then
-        fatal "Failed to extract sdcboot bundle"
-    fi
 
     if [[ "${is_joyent}" == "true" ]]; then
         echo "==> Extracting firmware bundle"
