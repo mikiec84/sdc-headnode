@@ -49,7 +49,6 @@ function config_loader
     local readonly kernel="i86pc/kernel/amd64/unix"
     local readonly archive="i86pc/amd64/boot_archive"
     local readonly tmpconf=$(mktemp /tmp/loader.conf.XXXX)
-    local readonly tmpmenu=$(mktemp /tmp/menu.rc.XXXX)
 
     echo "==> Updating Loader configuration"
 
@@ -59,6 +58,7 @@ function config_loader
     echo "boot_archive_name=\"/os/$version/platform/$archive\"" >> $tmpconf
     echo "boot_archive.hash_name=\"/os/$version/platform/${archive}.hash\"" \
         >> $tmpconf
+    echo "platform-version=\"$version\"" >> $tmpconf
 
     #
     # Check whether the currently running (soon-to-be previous) version 
@@ -104,6 +104,7 @@ function config_loader
             >> $tmpconf
         echo "prev-hash=\"/os/$rollback_vers/platform/${archive}.hash\"" \
             >> $tmpconf
+	echo "prev-version=\"$rollback_vers\"" >> $tmpconf
     fi
 
     #
@@ -113,19 +114,6 @@ function config_loader
     grep ^os_console= ${usbmnt}/boot/loader.conf >> $tmpconf
 
     #
-    # Expand the macros for PLATFORM and PREV_PLATFORM (if one exists) in
-    # menu.rc into the actual platform image versions.
-    #
-    if [[ -n $rollback_vers ]]; then
-        cat ${usbmnt}/boot/forth/menu.rc.tmpl | \
-            sed -e "s|#PLATFORM|${version}|" | \
-            sed -e "s|#PREV_PLATFORM|${rollback_vers}|" >> $tmpmenu
-    else
-        cat ${usbmnt}/boot/forth/menu.rc.tmpl | \
-            sed -e "s|#PLATFORM|${version}|" >> $tmpmenu
-    fi
-
-    #
     # If it's a dryrun, just print the new Loader configuration.  Otherwise,
     # copy the new configuration into place.
     #
@@ -133,10 +121,9 @@ function config_loader
         cat $tmpconf
     else
         cp -f $tmpconf ${usbmnt}/boot/loader.conf
-        cp -f $tmpmenu ${usbmnt}/boot/forth/menu.rc
     fi
 
-    rm -f $tmpconf $tmpmenu
+    rm -f $tmpconf
 }
 
 function config_grub

@@ -30,13 +30,24 @@ set mainmenu_caption[1]="Compute Node (PXE)"
 set mainansi_caption[1]="Compute Node (PXE)"
 set mainmenu_command[1]="ipxe_boot"
 
-set mainmenu_caption[2]="Boot #PLATFORM"
-set mainansi_caption[2]="Boot #PLATFORM"
+s" platform-version" getenv? [if]
+	create tmpstr 32 chars allot
+	s" Boot " tmpstr place
+	s" platform-version" getenv tmpstr append
+	tmpstr count s" mainmenu_caption[2]" setenv
+	tmpstr count s" mainansi_caption[2]" setenv
+[else]
+	set mainmenu_caption[2]="Boot SmartOS [Enter]"
+	set mainansi_caption[2]="Boot SmartOS [Enter]"
+[then]
 set mainmenu_command[2]="boot"
 
-s" prev-platform" getenv? [if]
-	set mainmenu_caption[3]="Rollback to #PREV_PLATFORM"
-	set mainansi_caption[3]="Rollback to #PREV_PLATFORM"
+s" prev-version" getenv? [if]
+	create tmpstr2 48 chars allot
+	s" Rollback to " tmpstr2 place
+	s" prev-version" getenv tmpstr2 append
+	tmpstr2 count s" mainmenu_caption[3]" setenv
+	tmpstr2 count s" mainansi_caption[3]" setenv
 	set mainmenu_command[3]="rollback_boot"
 
 	set mainmenu_caption[4]="[Esc]ape to loader prompt"
