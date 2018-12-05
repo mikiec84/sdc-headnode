@@ -376,11 +376,11 @@ $(USBKEY_TARBALLS): download
 #
 $(PROTO)/opt/smartdc/share/usbkey: $(USBKEY_SCRIPTS) $(USBKEY_TARBALLS)
 	mkdir -p $@/contents
-	cp $(USBKEY_SCRIPTS) $@/
+	cp -f $(USBKEY_SCRIPTS) $@/
 	for tar in $(USBKEY_TARBALLS); do \
 		gtar -C $@/contents -xvf $$tar ; \
 	done
-	cp -r boot $@/contents
+	cp -fr boot $@/contents
 	touch $@
 
 $(SDC_ZONE_BIN_LINKS):
