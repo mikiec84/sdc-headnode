@@ -364,7 +364,7 @@ USBKEY_SCRIPTS = \
 	scripts/update-usbkey.5.copy-contents.js
 
 USBKEY_TARBALLS = \
-	cache/file.sdcboot.tgz \
+	cache/file.ipxe.tgz \
 	cache/file.platboot.tgz
 
 $(USBKEY_TARBALLS): download
@@ -378,7 +378,7 @@ $(PROTO)/opt/smartdc/share/usbkey: $(USBKEY_SCRIPTS) $(USBKEY_TARBALLS)
 	mkdir -p $@/contents
 	cp -f $(USBKEY_SCRIPTS) $@/
 	for tar in $(USBKEY_TARBALLS); do \
-		gtar -C $@/contents -xvf $$tar ; \
+		gtar -C $@/contents -xvf $$tar || exit 1; \
 	done
 	cp -fr boot $@/contents
 	touch $@

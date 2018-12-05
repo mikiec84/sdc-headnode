@@ -230,11 +230,6 @@ function copy_base
         [[ -z ${ftbranch} ]] && ftbranch="master"
     fi
 
-    local sdcboot_path
-    sdcboot_path=$(get_bit "file.sdcboot.tgz")
-    local platboot_path
-    platboot_path=$(get_bit "file.platboot${plat_suf}.tgz")
-
     if [[ "${is_joyent}" == "true" ]]; then
         local firmware_path
         firmware_path=$(get_bit "file.firmware-tools.tgz")
