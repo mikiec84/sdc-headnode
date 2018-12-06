@@ -14,7 +14,7 @@
 
 set -e
 
-loader_path="/boot/loader64.efi"
+readonly loader_path="/boot/loader64.efi"
 dryrun="no"
 verbose="no"
 update_esp="no"
