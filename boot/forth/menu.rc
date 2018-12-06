@@ -28,7 +28,12 @@ set mainmenu_init[1]="init_boot"
 
 set mainmenu_caption[1]="Compute Node (PXE)"
 set mainansi_caption[1]="Compute Node (PXE)"
-set mainmenu_command[1]="ipxe_boot"
+
+s" efi-version" getenv? [if]
+	set mainmenu_command[1]="ipxe_chainload"
+[else]
+	set mainmenu_command[1]="ipxe_boot"
+[then]
 
 s" platform-version" getenv? [if]
 	create tmpstr 32 chars allot
@@ -144,7 +149,11 @@ set optionstoggled_ansi[6]="Disaster ^[1mR^mecovery........ ^[32;7mOn^[m"
 \ Enable automatic booting (add ``autoboot_delay=N'' to loader.conf(5) to
 \ customize the timeout; default is 10-seconds)
 \
-set menu_timeout_command="ipxe_boot"
+s" efi-version" getenv? [if]
+	set menu_timeout_command="ipxe_chainload"
+[else]
+	set menu_timeout_command="ipxe_boot"
+[then]
 
 \ Include optional elements defined in a local file
 \
