@@ -81,35 +81,36 @@ of all build configuration, and is versioned in the repository.
 During development, or as part of release engineering, particular elements of
 the build specification may be overridden in another file: `build.spec.local`.
 By re-specifying a subset of build configuration in this file, the behaviour of
-a particular build run may be altered.  A useful example of `build.spec.local`
-for local development is:
+a particular build run may be altered.  For example:
 
 ```
 {
-    "answer-file": "answers.json",
+    "answer-file": "answers.json.tmpl.external",
     "build-tgz": "false",
     "coal-memsize": 8192,
     "vmware_version": 7,
-    "default-boot-option": 1,
-    "clean-cache": true
+    "clean-cache": true,
+    "ipxe": true,
+    "console": "ttya"
 }
 ```
 
 In the example above,
 
   - `"answer-file"` is used to specify a setup answers file for inclusion in
-    resultant installation media
+    resultant installation media; `answers.json.tmpl.external` is suitable for
+    a standard COAL setup
   - `"build-tgz"` is used to disable the creation of a compressed tarball with
     the build results; instead, the resultant build artefacts will be left in
-    output directories.
+    output directories. This can be very useful when rsync'ing a COAL build
   - `"coal-memsize"` is used to set the VMware guest memory size to 8192MB
     (recommended if you plan to install a [Manta][manta] test environment.)
   - `"vmware_version"` specifies the version of VMware Fusion to target.
     See <https://kb.vmware.com/s/article/1003746> for mapping of Virtual
     Hardware Version to VMware releases. Note that `vmware_version=7`,
     corresponding to hardware version 11, is required for Bhyve VMs to work.
-  - `"default-boot-option"` selects the default Loader boot option; a value of
-    `1` selects the second entry in the menu: regular headnode boot
+  - COAL defaults to USB boot; `"ipxe"` modifies this default
+  - COAL defaults to serial console, using `ttyb`. Use `text` for VGA console
 
 #### Build Artefacts
 

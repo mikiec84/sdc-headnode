@@ -173,12 +173,9 @@ function create_directories
 function generate_loader_config
 {
     local unit=
-    local serial_dev
-    serial_dev=$(build_spec serial-dev)
-    local console
-    console=$(build_spec console)
-    local default_boot_option
-    default_boot_option=$(build_spec default-boot-option)
+    local serial_dev=$(build_spec serial-dev)
+    local console=$(build_spec console)
+    local ipxe=$(build_spec ipxe)
 
     # Feature flag for HEAD-2093
     # XXX - add code to handle ENABLE_DR
@@ -196,6 +193,12 @@ function generate_loader_config
     [[ ${console} = "serial" ]] && console="${serial_dev}"
 
     cp -f ${STAGE}/boot/loader.conf.tmpl ${STAGE}/boot/loader.conf
+
+    if [[ -z "$ipxe" ]]; then
+         ipxe="true"
+    fi
+
+    echo "ipxe=\"${ipxe}\"" >>${STAGE}/boot/loader.conf
 
     case "${console}" in
     ttya|ttyb|ttyc|ttyd)

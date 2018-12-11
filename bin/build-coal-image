@@ -149,6 +149,19 @@ function copy_config {
     cp -r config/config.inc ${MNT_DIR}/config.inc
 }
 
+#
+# COAL should default to booting from the USB key, not iPXE.
+#
+function modify_loader {
+    local ipxe=$(build_spec ipxe)
+
+    if [ -z "$ipxe" ]; then
+        ipxe="false"
+    fi
+
+    sed -i "s+^ipxe=.*+ipxe=\"$ipxe\"+" $MNT_DIR/boot/loader.conf
+}
+
 # Copy to mount is basically just extracting everything to the image mount
 function copy_to_mount
 {
@@ -319,5 +332,6 @@ trap 'cleanup' EXIT
 mount_root_image
 copy_to_mount
 copy_config
+modify_loader
 unmount_root_image
 create_output

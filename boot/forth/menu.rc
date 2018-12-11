@@ -7,6 +7,15 @@ include /boot/forth/menu.4th
 include /boot/forth/menu-commands.4th
 include /boot/forth/shortcuts.4th
 
+\ Init: store set up ipxe_command
+variable ipxe_command 20 chars allot
+
+s" efi-version" getenv? [if]
+	s" ipxe_chainload" ipxe_command place
+[else]
+	s" ipxe_boot" ipxe_command place
+[then]
+
 \ Screen prep
 clear         \ clear the screen (see `screen.4th')
 print_version \ print version string (bottom-right; see `version.4th')
@@ -28,12 +37,7 @@ set mainmenu_init[1]="init_boot"
 
 set mainmenu_caption[1]="Compute Node (PXE)"
 set mainansi_caption[1]="Compute Node (PXE)"
-
-s" efi-version" getenv? [if]
-	set mainmenu_command[1]="ipxe_chainload"
-[else]
-	set mainmenu_command[1]="ipxe_boot"
-[then]
+ipxe_command count s" mainmenu_command[1]" setenv
 
 s" platform-version" getenv? [if]
 	create tmpstr 32 chars allot
@@ -146,13 +150,12 @@ set optionsmenu_keycode[6]=114
 set optionsansi_caption[6]="Disaster ^[1mR^mecovery......... ^[34;1mOff^[m"
 set optionstoggled_ansi[6]="Disaster ^[1mR^mecovery........ ^[32;7mOn^[m"
 
-\ Enable automatic booting (add ``autoboot_delay=N'' to loader.conf(5) to
-\ customize the timeout; default is 10-seconds)
-\
-s" efi-version" getenv? [if]
-	set menu_timeout_command="ipxe_chainload"
+\ Set menu_timeout_command depending on whether the user
+\ has set ipxe
+s" ipxe" getenv s" true" compare 0= [if]
+	ipxe_command count s" menu_timeout_command" setenv
 [else]
-	set menu_timeout_command="ipxe_boot"
+	s" boot" strdup s" menu_timeout_command" setenv
 [then]
 
 \ Include optional elements defined in a local file
