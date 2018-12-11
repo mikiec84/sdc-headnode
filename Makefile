@@ -17,8 +17,10 @@ PERCENT := %
 
 ifeq ($(shell uname -s),SunOS)
 GREP = /usr/xpg4/bin/grep
+TAR = gtar
 else
 GREP = grep
+TAR = tar
 endif
 
 BASH_FILES := \
@@ -378,7 +380,7 @@ $(PROTO)/opt/smartdc/share/usbkey: $(USBKEY_SCRIPTS) $(USBKEY_TARBALLS)
 	mkdir -p $@/contents
 	cp -f $(USBKEY_SCRIPTS) $@/
 	for tar in $(USBKEY_TARBALLS); do \
-		gtar -C $@/contents -xvf $$tar || exit 1; \
+		$(TAR) -C $@/contents -xvf $$tar || exit 1; \
 	done
 	cp -fr boot $@/contents
 	touch $@
