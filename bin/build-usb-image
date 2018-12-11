@@ -174,7 +174,9 @@ function create_output
             && rm -rf $ROOT/usb-${THIS_BUILDSTAMP}
         (cd $STAGE \
             && mv $IMG_TMP_DIR/${OUTPUT_IMG} \
-            usb-${THIS_BUILDSTAMP}-${OUTPUT_IMG})
+            usb-${THIS_BUILDSTAMP}-${OUTPUT_IMG} \
+            && mv $IMG_TMP_DIR/$PARTMAP \
+            usb-${THIS_BUILDSTAMP}-$PARTMAP)
         mv $STAGE $ROOT/usb-${THIS_BUILDSTAMP}
     else
         echo "==> Creating usb-${THIS_BUILDSTAMP}.tgz"
