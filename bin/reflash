@@ -129,18 +129,10 @@ backup_usb_key()
             set -o xtrace
         fi
 
-        if [[ -z \$(mount | grep "^\/mnt\/usbkey ") ]]; then
-            MOUNT_SCRIPT="/usbkey/scripts/mount-usb.sh"
-            if [[ ! -f \${MOUNT_SCRIPT} ]]; then
-                MOUNT_SCRIPT="/mnt/usbkey/scripts/mount-usb.sh"
-            fi
-
-            # mount the usb key
-            echo "# mounting USB key..."
-            \${MOUNT_SCRIPT}
-        else
-            echo "# USB key already mounted"
-        fi
+        /opt/smartdc/bin/sdc-usbkey mount >/dev/null || {
+            echo "unable to mount USB key" >&2
+            exit 1
+        }
 
         # Keep the answers.json if it exists
         if [[ -f /mnt/usbkey/private/answers.json ]]; then
@@ -661,19 +653,10 @@ restore_usb_key()
             set -o xtrace
         fi
 
-        # mount it again
-        if [[ -z \$(mount | grep "^\/mnt\/usbkey ") ]]; then
-            MOUNT_SCRIPT="/usbkey/scripts/mount-usb.sh"
-            if [[ ! -f \${MOUNT_SCRIPT} ]]; then
-                MOUNT_SCRIPT="/mnt/usbkey/scripts/mount-usb.sh"
-            fi
-
-            # mount the usb key
-            echo "# mounting USB key..."
-            \${MOUNT_SCRIPT}
-        else
-            echo "# USB key already mounted"
-        fi
+        /opt/smartdc/bin/sdc-usbkey mount >/dev/null || {
+            echo "unable to mount USB key" >&2
+            exit 1
+        }
 
         # move new devtools out of way so we can drop in old first
         if [[ -d /mnt/usbkey/devtools ]]; then
