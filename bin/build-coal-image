@@ -159,7 +159,7 @@ function modify_loader {
         ipxe="false"
     fi
 
-    sed -i "" "s+^ipxe=.*+ipxe=\"$ipxe\"+" $MNT_DIR/boot/loader.conf
+    sed -i= "s+^ipxe=.*+ipxe=\"$ipxe\"+" $MNT_DIR/boot/loader.conf
 }
 
 # Copy to mount is basically just extracting everything to the image mount
