@@ -558,6 +558,53 @@ Usbkey.prototype.do_update.help = [
     '{{options}}'
 ].join('\n');
 
+/*
+ * sdc-usbkey set-variable
+ */
+Usbkey.prototype.do_set_variable = function
+do_set_variable(subcmd, opts, args, callback)
+{
+    var self = this;
+
+    if (opts.help) {
+        self.do_help('help', {}, [ subcmd ], callback);
+        return;
+    }
+
+    if (args.length != 2) {
+        self.do_help('help', {}, [ subcmd ], callback);
+        return;
+    }
+
+    if (!self._global_zone_only(callback)) {
+        return;
+    }
+
+    lib_usbkey.set_variable(args[0], args[1], function (err) {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        callback();
+    });
+};
+Usbkey.prototype.do_set_variable.options = [
+    {
+        names: [ 'help', 'h', '?' ],
+        type: 'bool',
+        help: 'Print this help message.'
+    }
+];
+Usbkey.prototype.do_set_variable.help = [
+    'Set a grub/loader variable',
+    '',
+    'Usage:',
+    '     sdc-usbkey set-variable <name> <value>',
+    '',
+    '{{options}}'
+].join('\n');
+
 if (require.main === module) {
     mod_cmdln.main(Usbkey);
 }

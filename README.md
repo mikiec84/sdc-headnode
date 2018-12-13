@@ -22,8 +22,8 @@ To create a VM for local development work – commonly called 'coal' (Cloud On 
             ./tools/coal-mac-vmware-setup
 
   - Optionally, to automate setup:
-    - create a `build.spec.local` file with the following contents: `{"answer-file": "answers.json"}`
-    - copy one of the answers.json templates: `cp answers.json.tmpl.external answers.json`
+
+    - `echo '{"answer-file": "answers.json.tmpl.external"}' >build.spec.local`
 
     - see the [Build Specification][buildspec] and
       [Automating Headnode Setup][autosetup] sections below for more information.
@@ -32,10 +32,15 @@ To create a VM for local development work – commonly called 'coal' (Cloud On 
     images of all services. This can take quite some time. If this fails,
     please see the 'Build Prerequisites' and/or 'Debugging' sections below.
 
-  - open `coal-master-TIMESTAMP-gSHA.vmwarevm`, select Option 2 at the
-    Loader menu, and work through the interactive installer referring to [this
-    documentation][coal-setup.md]. **Important**: while many answers are arbitrary, the
-    networking questions require specific values for local development.
+  - `open coal-master-TIMESTAMP-gSHA.vmwarevm`, let the boot time out, then work
+    through the interactive installer if you didn't provide an answer file,
+    referring to [this documentation][coal-setup.md]. **Important**: while many
+    answers are arbitrary, the networking questions require specific values
+    for local development.
+
+  - note that the console defaults to `ttyb` a.k.a. `socket.serial1`. You can
+    use something like [sercons][https://github.com/jclulow/vmware-sercons] to
+    connect to this.
 
   - when setup completes, you can access the headnode via ssh: `ssh
     root@10.99.99.7` using the root password specified during setup.

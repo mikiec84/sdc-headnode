@@ -44,6 +44,20 @@ function onexit
     echo "==> Done!"
 }
 
+# replace a loader conf value
+function edit_param
+{
+	local readonly file="$1"
+	local readonly key="$2"
+	local readonly value="$3"
+	if ! /usr/bin/grep "^\s*$key\s*=\s*" $file >/dev/null; then
+		echo "$key=\"$value\"" >>$file
+		return
+	fi
+
+	/usr/bin/sed -i= "s+^\s*$key\s*=.*+$key=\"$value\"+" $file
+}
+
 function config_loader
 {
     local readonly kernel="i86pc/kernel/amd64/unix"
@@ -52,13 +66,13 @@ function config_loader
 
     echo "==> Updating Loader configuration"
 
-    cp ${usbmnt}/boot/loader.conf.tmpl $tmpconf
+    cp ${usbmnt}/boot/loader.conf $tmpconf
 
-    echo "bootfile=\"/os/$version/platform/$kernel\"" >> $tmpconf
-    echo "boot_archive_name=\"/os/$version/platform/$archive\"" >> $tmpconf
-    echo "boot_archive.hash_name=\"/os/$version/platform/${archive}.hash\"" \
-        >> $tmpconf
-    echo "platform-version=\"$version\"" >> $tmpconf
+    edit_param $tmpconf bootfile "/os/$version/platform/$kernel"
+    edit_param $tmpconf boot_archive_name "/os/$version/platform/$archive"
+    edit_param $tmpconf boot_archive.hash_name \
+        "/os/$version/platform/${archive}.hash"
+    edit_param $tmpconf platform-version "$version"
 
     #
     # Check whether the currently running (soon-to-be previous) version 
@@ -98,20 +112,12 @@ function config_loader
     fi
 
     if [[ -n $rollback_vers ]]; then
-        echo "prev-platform=\"/os/$rollback_vers/platform/$kernel\"" \
-            >> $tmpconf
-        echo "prev-archive=\"/os/$rollback_vers/platform/$archive\"" \
-            >> $tmpconf
-        echo "prev-hash=\"/os/$rollback_vers/platform/${archive}.hash\"" \
-            >> $tmpconf
-	echo "prev-version=\"$rollback_vers\"" >> $tmpconf
+        edit_param $tmpconf prev-platform "/os/$rollback_vers/platform/$kernel"
+        edit_param $tmpconf prev-archive "/os/$rollback_vers/platform/$archive"
+        edit_param $tmpconf prev-hash \
+            "/os/$rollback_vers/platform/${archive}.hash"
+        edit_param $tmpconf prev-version "$rollback_vers"
     fi
-
-    #
-    # Preserve Loader and OS console settings from the previous config.
-    #
-    grep ^console= ${usbmnt}/boot/loader.conf >> $tmpconf
-    grep ^os_console= ${usbmnt}/boot/loader.conf >> $tmpconf
 
     #
     # If it's a dryrun, just print the new Loader configuration.  Otherwise,
@@ -197,16 +203,15 @@ trap onexit EXIT
     fatal "==> FATAL ${usbmnt}/os/${version} does not exist."
 
 
-#
-# XXX - Change this logic to look at MBR version
-#
-if [[ -f ${loader_conf} ]]; then
-	config_loader
-elif [[ -f ${menulst} ]]; then
-	config_grub
-else
-	fatal "===> FATAL no boot loader configuration found"
-fi
+readonly usb_version=$(/opt/smartdc/bin/sdc-usbkey status -j | json version)
+
+case "$usb_version" in
+	1) config_grub ;;
+	2) config_loader ;;
+	*) echo "unknown USB key version $usb_version" >&2
+	   /opt/smartdc/bin/sdc-usbkey unmount
+	   exit 1 ;;
+esac
 
 # If upgrading, skip cnapi update, we're done now.
 [ $UPGRADE -eq 1 ] && exit 0
