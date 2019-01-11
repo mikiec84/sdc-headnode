@@ -80,7 +80,7 @@ function update_sdc_zone_pkgs()
 	    | json -H  \
 	    -e 'this.smartdc_role=(this.tags.smartdc_role || "-")' \
 	    -e 'this.package_name=(this.package_name || "-")' \
-	    -c 'this.tags.smartdc_role' \
+	    -c 'this.tags.smartdc_role && this.tags.smartdc_role!=="nat"' \
 	    -a smartdc_role package_name | \
 	    while read role pkg
 	    do
