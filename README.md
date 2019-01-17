@@ -95,7 +95,7 @@ a particular build run may be altered.  For example:
     "coal-memsize": 8192,
     "vmware_version": 7,
     "clean-cache": true,
-    "ipxe": true,
+    "ipxe": false,
     "console": "ttya"
 }
 ```
