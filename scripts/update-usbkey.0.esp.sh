@@ -4,10 +4,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# Copyright (c) 2018, Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
-# This script is run by sdc-usbkey update to copy over any new contents of
-# /opt/smartdc/share/usbkey/contents/ over to the root of the USB key.
+# This script is run by sdc-usbkey update to update the copy of loader in the
+# EFI System Partition if needed.
 #
 
 . /lib/sdc/usb-key.sh
