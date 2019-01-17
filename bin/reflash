@@ -731,9 +731,6 @@ sanity_check_usb()
                 exit 1
             fi
 
-            # Set default menu item to boot to 1 so we can boot unattended (we know
-            # this is a HN since we're reflashing, so don't boot the Compute Node
-            # image)
             sed -e "s/^default.*$/default 1/" /mnt/usbkey/boot/grub/menu.lst \
                 > /mnt/usbkey/boot/grub/menu.lst.new \
                 && mv /mnt/usbkey/boot/grub/menu.lst.new \
