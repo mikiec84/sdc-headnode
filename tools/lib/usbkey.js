@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 var mod_fs = require('fs');
@@ -301,14 +301,14 @@ get_usb_key_version(device, callback)
         mod_fs.read(fd, buffer, 0, buffer.length, 0,
           function (err, nr_read, buffer) {
             if (err) {
-                mod_fs.close(fd, function() {
+                mod_fs.close(fd, function () {
                     callback();
                 });
                 return;
             }
 
             if ((buffer[0x1fe] | buffer[0x1ff] << 8) !== 0xaa55) {
-                mod_fs.close(fd, function() {
+                mod_fs.close(fd, function () {
                     callback();
                 });
                 return;
@@ -323,7 +323,7 @@ get_usb_key_version(device, callback)
                 version = 2;
             }
 
-            mod_fs.close(fd, function() {
+            mod_fs.close(fd, function () {
                 if (version === null) {
                     callback(null,
                         new VError('unrecognised key version for ' + device));
@@ -1015,7 +1015,7 @@ sedfile(file, search, replace, callback)
             return;
         }
 
-        lines = data.replace(/\n$/, '').split(mod_os.EOL);
+        var lines = data.replace(/\n$/, '').split(mod_os.EOL);
 
         for (i = 0; i < lines.length; i++) {
             var line = lines[i];
@@ -1058,7 +1058,9 @@ set_variable_grub(mountpoint, name, value, callback)
 
     /* Special handling: ipxe for grub means changing default */
     if (name === 'ipxe') {
-        search = '^\\s*default\\s+.*$';
+        var search = '^\\s*default\\s+.*$';
+        var replace;
+
         if (value === 'true') {
             replace = 'default 0';
         } else {
@@ -1099,8 +1101,8 @@ set_variable_loader(mountpoint, name, value, callback)
     mod_assert.string(value, 'value');
     mod_assert.func(callback, 'callback');
 
-    search = '^\\s*' + name + '\\s*=\\s*.*$';
-    replace = name + '=' + value;
+    var search = '^\\s*' + name + '\\s*=\\s*.*$';
+    var replace = name + '=' + value;
 
     sedfile(mountpoint + '/boot/loader.conf', search, replace, function (err) {
         if (err) {
@@ -1119,13 +1121,13 @@ set_variable(name, value, callback)
     mod_assert.string(value, 'value');
     mod_assert.func(callback, 'callback');
 
-    ensure_usbkey_mounted({}, function(err) {
+    ensure_usbkey_mounted({}, function (err) {
         if (err) {
             callback(err);
             return;
         }
 
-        get_usbkey_mount_status({}, function(err, status) {
+        get_usbkey_mount_status({}, function (err, status) {
             if (err) {
                 callback(err);
                 return;
@@ -1139,7 +1141,8 @@ set_variable(name, value, callback)
                 set_variable_loader(status.mountpoint, name, value, callback);
                 return;
             default:
-                callback(new VError('unknown USB key version' + version));
+                callback(new VError('unknown USB key version ' +
+                    status.version));
                 return;
             }
         });

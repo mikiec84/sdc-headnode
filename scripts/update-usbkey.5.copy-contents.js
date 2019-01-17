@@ -7,7 +7,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 
@@ -353,10 +353,11 @@ do_copy(opts, callback)
 }
 
 if (require.main === module) {
-    parser = new mod_getopt.BasicParser('nv', process.argv);
+    var parser = new mod_getopt.BasicParser('nv', process.argv);
 
-    dryrun = false;
-    verbose = false;
+    var dryrun = false;
+    var verbose = false;
+    var option;
 
     while ((option = parser.getopt()) !== undefined) {
         switch (option.option) {
@@ -380,8 +381,8 @@ if (require.main === module) {
         process.exit(2);
     }
 
-    contents = process.argv[parser.optind()];
-    mountpoint = process.argv[parser.optind() + 1];
+    var contents = process.argv[parser.optind()];
+    var mountpoint = process.argv[parser.optind() + 1];
 
     do_copy({
         src: contents,

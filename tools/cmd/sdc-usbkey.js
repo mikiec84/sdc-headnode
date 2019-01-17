@@ -335,7 +335,7 @@ run_update(opts, callback)
         return;
     }
 
-    args = [];
+    var args = [];
     if (opts.dryrun) {
         args.push('-n');
     }
@@ -349,7 +349,7 @@ run_update(opts, callback)
 
     mod_vasync.forEachPipeline({
         func: function (script, callback) {
-            argv = [ script ].concat(args);
+            var argv = [ script ].concat(args);
 
             if (opts.verbose) {
                 console.log('Executing ' + argv.join(' '));

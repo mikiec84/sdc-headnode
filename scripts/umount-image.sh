@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2018, Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 
 function fatal
@@ -62,5 +62,4 @@ cp "${image}.hash" "${usbcopy}${image_subdir}"
 /opt/smartdc/bin/sdc-usbkey unmount
 [[ $? != 0 ]] && fatal "could not unmount USB key"
 
-fi
 echo "done."
