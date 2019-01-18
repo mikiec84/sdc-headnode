@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2018, Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 
 set -o errexit
@@ -55,7 +55,7 @@ function edit_param
 		return
 	fi
 
-	/usr/bin/sed -i= "s+^\s*$key\s*=.*+$key=\"$value\"+" $file
+	/usr/bin/sed -i '' "s+^\s*$key\s*=.*+$key=\"$value\"+" $file
 }
 
 function config_loader

@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright 2018 Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 
 ROOT=$(cd $(dirname $0)/../; pwd)
@@ -159,7 +159,8 @@ function modify_loader {
         ipxe="false"
     fi
 
-    sed -i= "s+^ipxe=.*+ipxe=\"$ipxe\"+" $MNT_DIR/boot/loader.conf
+    sed -i'.tmp' "s+^ipxe=.*+ipxe=\"$ipxe\"+" $MNT_DIR/boot/loader.conf
+    rm $MNT_DIR/boot/loader.conf.tmp
 }
 
 # Copy to mount is basically just extracting everything to the image mount
