@@ -30,8 +30,6 @@ TEMP_CONFIGS=/var/tmp/node.config
 #
 MIN_DISK_TO_RAM=2
 
-USB_PATH="$1"
-
 # status output goes to /dev/console instead of stderr
 exec 4>/dev/console
 
@@ -192,11 +190,11 @@ function headnode_boot_setup
 
     [[ -z "$console" ]] && console=text
 
-    if ! usb_key_set_console "$USB_PATH" "$console"; then
+    if ! usb_key_set_console "$console"; then
         fatal "Couldn't set bootloader console to \"$console\""
     fi
 
-    if ! usb_key_disable_ipxe "$USB_PATH"; then
+    if ! usb_key_disable_ipxe; then
         fatal "Couldn't modify bootloader to disable ipxe"
     fi
 }
