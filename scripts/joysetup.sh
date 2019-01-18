@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright 2017 Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 
 #
@@ -29,6 +29,8 @@ TEMP_CONFIGS=/var/tmp/node.config
 # to run successfully.
 #
 MIN_DISK_TO_RAM=2
+
+USB_PATH="$1"
 
 # status output goes to /dev/console instead of stderr
 exec 4>/dev/console
@@ -62,6 +64,8 @@ if [[ $(zonename) != "global" && -n ${MOCKCN_SERVER_UUID} ]]; then
     TEMP_CONFIGS=/var/tmp/config-${MOCKCN_SERVER_UUID}
     MOCKCN="true"
 fi
+
+. /lib/sdc/usb-key.sh
 
 # Load SYSINFO_* and CONFIG_* values
 . /lib/sdc/config.sh
@@ -174,7 +178,11 @@ function check_ntp
     set -o pipefail
 }
 
-function boot_setup
+#
+# If we're a headnode we should default to booting from the USB key from this
+# point on.  In addition we should update any console setting.
+#
+function headnode_boot_setup
 {
     local console=
 
@@ -182,36 +190,15 @@ function boot_setup
     console=$(bootparams | grep ^console= | cut -d= -f2)
     set -o pipefail
 
-    [[ -z "${console}" ]] && console=text
+    [[ -z "$console" ]] && console=text
 
-    if [[ -f /mnt/usbkey/boot/loader.conf ]]; then
-        #
-        # XXX - add code to handle Loader configuration
-        #
-        echo "Loader configuration not implemented, yet"
-    elif [[ -f /mnt/usbkey/boot/grub/menu.lst.tmpl ]]; then
-        #
-	# Configure GRUB to boot the first menu item, by default.
-	# Also set the os_console variable which ultimately gets passed
-	# as a boot argument to the kernel.
-	#
-        sed -e "s/^default.*/default 1/" \
-            -e "s/^variable os_console.*/variable os_console ${console}/" \
-            < /mnt/usbkey/boot/grub/menu.lst.tmpl \
-            > /tmp/menu.lst.tmpl
-        mv -f /tmp/menu.lst.tmpl /mnt/usbkey/boot/grub/menu.lst.tmpl
-
-        if [[ -f /mnt/usbkey/boot/grub/menu.lst ]]; then
-            sed -e "s/^default.*/default 1/" \
-                -e "s/^variable os_console.*/variable os_console ${console}/" \
-                < /mnt/usbkey/boot/grub/menu.lst \
-                > /tmp/menu.lst
-            mv -f /tmp/menu.lst /mnt/usbkey/boot/grub/menu.lst
-        fi
-    else
-        fatal "No Loader or GRUB configuration found."
+    if ! usb_key_set_console "$USB_PATH" "$console"; then
+        fatal "Couldn't set bootloader console to \"$console\""
     fi
 
+    if ! usb_key_disable_ipxe "$USB_PATH"; then
+        fatal "Couldn't modify bootloader to disable ipxe"
+    fi
 }
 
 SETUP_FILE=/var/lib/setup.json
@@ -645,7 +632,7 @@ if [[ "$(zpool list)" == "no pools available" ]] \
     create_zpool zones ${POOL_FILE}
 
     if is_headnode; then
-        boot_setup
+        headnode_boot_setup
     fi
 
     if is_headnode; then

@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright 2018 Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 
 #
@@ -293,7 +293,7 @@ POOLS=`zpool list`
 if [[ ${POOLS} == "no pools available" ]]; then
     cr_once
 
-    if ! ${USB_PATH}/scripts/joysetup.sh; then
+    if ! ${USB_PATH}/scripts/joysetup.sh ${USB_PATH}; then
         # copy the log out just in case we made it as far as setting up /var
         cp /tmp/joysetup.* /zones/
         exit 1
