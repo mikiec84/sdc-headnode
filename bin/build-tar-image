@@ -172,10 +172,13 @@ function create_directories
 
 function generate_loader_config
 {
-    local unit=
-    local serial_dev=$(build_spec serial-dev)
-    local console=$(build_spec console)
-    local ipxe=$(build_spec ipxe)
+    local serial_dev=
+    local console=
+    local ipxe=
+
+    serial_dev=$(build_spec serial-dev)
+    console=$(build_spec console)
+    ipxe=$(build_spec ipxe)
 
     # Feature flag for HEAD-2093
     # XXX - add code to handle ENABLE_DR

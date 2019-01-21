@@ -723,7 +723,8 @@ sanity_check_usb()
         # sdc-usbkey might not be new enough for this; in that case, we know
         # we're using grub.
         #
-        if ! /opt/smartdc/bin/sdc-usbkey set-variable ipxe false 2>/dev/null; then
+        if ! /opt/smartdc/bin/sdc-usbkey set-variable \
+	    ipxe false 2>/dev/null; then
 
             # Ensure we've got a platform + grub
             if [[ ! -f /mnt/usbkey/boot/grub/menu.lst ]]; then

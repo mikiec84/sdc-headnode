@@ -245,7 +245,7 @@ bfm_find_build_files(bfm, next)
  * that includes the MD5 checksum and the filename of each produced bit.  The
  * lines look roughly like:
  *
- *   e3b3eefaff770d27619361606ed507df bits//platform/platform-master-20150721T202313Z.tgz
+ *   e3b3ee... bits//platform/platform-master-20150721T202313Z.tgz
  *
  * It is probably not safe to infer anything about the path, other than
  * that the _basename_ will match the uploaded object name in Manta.
