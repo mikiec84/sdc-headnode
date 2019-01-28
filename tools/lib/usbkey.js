@@ -290,7 +290,7 @@ get_usb_key_version(device, callback)
 
     var p0dev = device.replace(/[sp][0-9]+$/, 'p0');
 
-    mod_fs.open(p0dev, 'r', function (err, fd) {
+    mod_fs.open(p0dev, 'r', function read_mbr(err, fd) {
         if (err) {
             callback(null, err);
             return;
@@ -299,7 +299,7 @@ get_usb_key_version(device, callback)
         var buffer = new Buffer(512);
 
         mod_fs.read(fd, buffer, 0, buffer.length, 0,
-          function (err, nr_read, buffer) {
+          function inspect_mbr(err, nr_read, buffer) {
             if (err) {
                 mod_fs.close(fd, function () {
                     callback();
@@ -349,7 +349,8 @@ inspect_device(pcfs_devices, disk, callback)
     mod_assert.string(disk, 'disk');
     mod_assert.func(callback, 'callback');
 
-    get_usb_key_version('/dev/dsk/' + disk + 'p0', function (version, err) {
+    get_usb_key_version('/dev/dsk/' + disk + 'p0',
+        function check_fstyp(version, err) {
         if (err) {
             callback();
             return;
@@ -388,7 +389,7 @@ locate_pcfs_devices(callback)
 {
     mod_assert.func(callback, 'callback');
 
-    lib_oscmds.diskinfo(function (err, disks) {
+    lib_oscmds.diskinfo(function inspect_devices(err, disks) {
         if (err) {
             callback(err);
             return;

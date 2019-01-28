@@ -37,8 +37,8 @@ function onexit
 {
     if [[ ${mounted} == "true" ]]; then
         echo "==> Unmounting USB Key"
-        /opt/smartdc/bin/sdc-usbkey unmount
-        [ $? != 0 ] && fatal "failed to unmount USB key"
+        /opt/smartdc/bin/sdc-usbkey unmount ||
+            echo "failed to unmount USB key" >&2
     fi
 
     echo "==> Done!"
@@ -47,15 +47,15 @@ function onexit
 # replace a loader conf value
 function edit_param
 {
-	local readonly file="$1"
-	local readonly key="$2"
-	local readonly value="$3"
-	if ! /usr/bin/grep "^\s*$key\s*=\s*" $file >/dev/null; then
-		echo "$key=\"$value\"" >>$file
-		return
-	fi
+    local readonly file="$1"
+    local readonly key="$2"
+    local readonly value="$3"
+    if ! /usr/bin/grep "^\s*$key\s*=\s*" $file >/dev/null; then
+        echo "$key=\"$value\"" >>$file
+        return
+    fi
 
-	/usr/bin/sed -i '' "s+^\s*$key\s*=.*+$key=\"$value\"+" $file
+    /usr/bin/sed -i '' "s+^\s*$key\s*=.*+$key=\"$value\"+" $file
 }
 
 function config_loader
@@ -75,7 +75,7 @@ function config_loader
     edit_param $tmpconf platform-version "$version"
 
     #
-    # Check whether the currently running (soon-to-be previous) version 
+    # Check whether the currently running (soon-to-be previous) version
     # exists on the USB key.  This should always be the case on production
     # bits as we set the rollback target to the currently running platform and
     # sdcadm will prevent the user from removing the currently running platform
@@ -206,11 +206,11 @@ trap onexit EXIT
 readonly usb_version=$(/opt/smartdc/bin/sdc-usbkey status -j | json version)
 
 case "$usb_version" in
-	1) config_grub ;;
-	2) config_loader ;;
-	*) echo "unknown USB key version $usb_version" >&2
-	   /opt/smartdc/bin/sdc-usbkey unmount
-	   exit 1 ;;
+    1) config_grub ;;
+    2) config_loader ;;
+    *) echo "unknown USB key version $usb_version" >&2
+       /opt/smartdc/bin/sdc-usbkey unmount
+       exit 1 ;;
 esac
 
 # If upgrading, skip cnapi update, we're done now.
@@ -227,7 +227,7 @@ uuid=`curl -s http://${CONFIG_cnapi_admin_ips}/servers | \
     fatal "==> FATAL unable to determine headnode UUID from cnapi."
 
 if [[ -n "${dryrun}" ]]; then
-	doit="echo"
+    doit="echo"
 fi
 
 ${doit} curl -s http://${CONFIG_cnapi_admin_ips}/servers/${uuid} \

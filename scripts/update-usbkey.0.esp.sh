@@ -10,7 +10,15 @@
 # EFI System Partition if needed.
 #
 
-. /lib/sdc/usb-key.sh
+#
+# If our PI doesn't have this file, we cannot have an ESP.
+#
+. /lib/sdc/usb-key.sh 2>/dev/null || {
+	function mount_usb_key_esp
+	{
+		echo ""
+	}
+}
 
 set -e
 

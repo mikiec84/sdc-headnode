@@ -73,7 +73,7 @@ init(opts, args, callback)
         process.env.DEBUG = 'yes';
     }
 
-    lib_oscmds.zonename(function (err, zonename) {
+    lib_oscmds.zonename(function set_uk_ngz(err, zonename) {
         if (!err && zonename !== 'global') {
             self.uk_ngz = true;
         }
@@ -219,7 +219,7 @@ do_status(subcmd, opts, args, callback)
         return;
     }
 
-    lib_usbkey.get_usbkey_mount_status(null, function (err, status) {
+    lib_usbkey.get_usbkey_mount_status(null, function log_status(err, status) {
         if (err) {
             callback(err);
             return;
@@ -348,7 +348,7 @@ run_update(opts, callback)
     args.push(opts.mountpoint);
 
     mod_vasync.forEachPipeline({
-        func: function (script, callback) {
+        func: function run_update_script(script, callback) {
             var argv = [ script ].concat(args);
 
             if (opts.verbose) {
@@ -415,7 +415,7 @@ do_update(subcmd, opts, args, callback)
 
     mod_vasync.pipeline({
         funcs: [
-            function (_, next) {
+            function get_usbkey_status(_, next) {
                 if (cancel) {
                     next();
                     return;
@@ -439,7 +439,7 @@ do_update(subcmd, opts, args, callback)
                     next();
                 });
             },
-            function (_, next) {
+            function mount_usbkey(_, next) {
                 if (cancel) {
                     next();
                     return;
@@ -474,7 +474,7 @@ do_update(subcmd, opts, args, callback)
                     next();
                 });
             },
-            function (_, next) {
+            function do_run_update(_, next) {
                 if (cancel) {
                     next();
                     return;
@@ -495,7 +495,7 @@ do_update(subcmd, opts, args, callback)
                     next();
                 });
             },
-            function (_, next) {
+            function unmount_usbkey(_, next) {
                 if (cancel) {
                     next();
                     return;

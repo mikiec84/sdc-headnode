@@ -63,7 +63,57 @@ if [[ $(zonename) != "global" && -n ${MOCKCN_SERVER_UUID} ]]; then
     MOCKCN="true"
 fi
 
-. /lib/sdc/usb-key.sh
+#
+# It's possible that we provided an older PI to the CN, and usb-key.sh comes
+# from there. If so, this will fail, but we know it must be a grub-based PI.
+# One day, we can remove this...
+#
+# (We can't even have a copy of usb-key.sh, since we could be on a totally new
+# CN that hasn't yet reached setup_tools().)
+#
+. /lib/sdc/usb-key.sh || {
+
+   function usb_key_set_console
+   {
+       local readonly console=$1
+
+       if [[ ! -f /mnt/usbkey/boot/grub/menu.lst.tmpl ]]; then
+           fatal "No GRUB menu found."
+       else
+           sed -e "s/^variable os_console.*/variable os_console ${console}/" \
+               < /mnt/usbkey/boot/grub/menu.lst.tmpl \
+               > /tmp/menu.lst.tmpl
+           mv -f /tmp/menu.lst.tmpl /mnt/usbkey/boot/grub/menu.lst.tmpl
+       fi
+
+       if [[ -f /mnt/usbkey/boot/grub/menu.lst ]]; then
+           sed -e "s/^variable os_console.*/variable os_console ${console}/" \
+               < /mnt/usbkey/boot/grub/menu.lst \
+               > /tmp/menu.lst
+           mv -f /tmp/menu.lst /mnt/usbkey/boot/grub/menu.lst
+       fi
+   }
+
+   function usb_key_disable_ipxe
+   {
+       if [[ ! -f /mnt/usbkey/boot/grub/menu.lst.tmpl ]]; then
+           fatal "No GRUB menu found."
+       else
+           sed -e "s/^default.*/default 1/" \
+               < /mnt/usbkey/boot/grub/menu.lst.tmpl \
+               > /tmp/menu.lst.tmpl
+           mv -f /tmp/menu.lst.tmpl /mnt/usbkey/boot/grub/menu.lst.tmpl
+       fi
+
+       if [[ -f /mnt/usbkey/boot/grub/menu.lst ]]; then
+           sed -e "s/^default.*/default 1/" \
+               < /mnt/usbkey/boot/grub/menu.lst \
+               > /tmp/menu.lst
+           mv -f /tmp/menu.lst /mnt/usbkey/boot/grub/menu.lst
+       fi
+   }
+
+}
 
 # Load SYSINFO_* and CONFIG_* values
 . /lib/sdc/config.sh
