@@ -170,52 +170,69 @@ function create_directories
     mkdir -p ${STAGE}
 }
 
+#
+# The console configuration is a little bit complicated below.  We want loader
+# to appear on everything available, but prefer any explicitly specified
+# console, defaulting to ttyb.
+#
+# But we also need to pass through "os_console" for the kernel, so we can see
+# kernel output on the console requested.
+#
 function generate_loader_config
 {
-    local serial_dev=
-    local console=
-    local ipxe=
-
-    serial_dev=$(build_spec serial-dev)
-    console=$(build_spec console)
-    ipxe=$(build_spec ipxe)
-
-    # Feature flag for HEAD-2093
-    # XXX - add code to handle ENABLE_DR
+    local serial_dev
     local enable_dr
-    enable_dr=$(build_spec enable-disaster-recovery)
-    local DR_VAL='#DR '
-    [[ ${enable_dr} == "true" ]] && DR_VAL=''
+    local console
+    # XXX - add code to handle ENABLE_DR
+    local DR_VAL='#DR'
+    local ipxe
 
     echo "==> Generating boot loader configuration "
 
-    [[ -z "${serial_dev}" ]] && serial_dev=ttyb
+    serial_dev=$(build_spec serial-dev)
+    os_console=$(build_spec console)
+    ipxe=$(build_spec ipxe)
+    # Feature flag for HEAD-2093
+    enable_dr=$(build_spec enable-disaster-recovery)
 
-    [[ -z "${console}" ]] && console="ttyb"
+    [[ ${enable_dr} == "true" ]] && DR_VAL=''
+    [[ -z "$ipxe" ]] && ipxe="true"
+    [[ -z "${serial_dev}" ]] && serial_dev="ttyb"
+    [[ -z "${os_console}" ]] && os_console="${serial_dev}"
 
-    [[ ${console} = "serial" ]] && console="${serial_dev}"
+    case "${serial_dev}" in
+    ttya) lconsole="ttya,ttyb,ttyc,ttyd" ;;
+    ttyb) lconsole="ttyb,ttya,ttyc,ttyd" ;;
+    ttyc) lconsole="ttyc,ttya,ttyb,ttyd" ;;
+    ttyd) lconsole="ttyd,ttya,ttyb,ttyc" ;;
+    *) fatal "Unknown serial-dev \"${serial_dev}\"" ;;
+    esac
+
+    case "${os_console}" in
+    text|graphics|vga)
+        os_console="text"
+        lconsole="text,${lconsole}"
+        ;;
+
+    serial)
+        os_console="${serial_dev}"
+        lconsole="${lconsole},text"
+        ;;
+
+    ttya|ttyb|ttyc|ttyd)
+        lconsole="${lconsole},text"
+        ;;
+
+    *)
+        fatal "Unknown console device \"${os_console}\""
+        ;;
+    esac
 
     cp -f ${STAGE}/boot/loader.conf.tmpl ${STAGE}/boot/loader.conf
 
-    if [[ -z "$ipxe" ]]; then
-         ipxe="true"
-    fi
-
     echo "ipxe=\"${ipxe}\"" >>${STAGE}/boot/loader.conf
-
-    case "${console}" in
-    ttya|ttyb|ttyc|ttyd)
-        echo "console=\"${console},text\"" >>${STAGE}/boot/loader.conf
-        echo "os_console=\"${console}\"" >>${STAGE}/boot/loader.conf
-        ;;
-    text|graphics|vga)
-        echo "console=\"text,${serial_dev}\"" >>${STAGE}/boot/loader.conf
-        echo "os_console=\"text\"" >>${STAGE}/boot/loader.conf
-        ;;
-    *)
-        fatal "Unknown default console device: ${console}"
-        ;;
-    esac
+    echo "console=\"${lconsole}\"" >>${STAGE}/boot/loader.conf
+    echo "os_console=\"${os_console}\"" >>${STAGE}/boot/loader.conf
 }
 
 function copy_base
