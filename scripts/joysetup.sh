@@ -64,14 +64,14 @@ if [[ $(zonename) != "global" && -n ${MOCKCN_SERVER_UUID} ]]; then
 fi
 
 #
-# It's possible that we provided an older PI to the CN, and usb-key.sh comes
-# from there. If so, this will fail, but we know it must be a grub-based PI.
-# One day, we can remove this...
+# If we're on an older PI, this include file won't exist. For a CN, it doesn't
+# matter, as these routines are only used by headnode_boot_setup.
 #
-# (We can't even have a copy of usb-key.sh, since we could be on a totally new
-# CN that hasn't yet reached setup_tools().)
+# An HN that has done `update-gz-tools` could be running this script on an older
+# PI. But such an older PI can presume grub: if we had a loader key, it should
+# have a PI new enough to have this file.
 #
-. /lib/sdc/usb-key.sh || {
+. /lib/sdc/usb-key.sh 2>/dev/null || {
 
    function usb_key_set_console
    {
