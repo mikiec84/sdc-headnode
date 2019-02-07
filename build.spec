@@ -58,7 +58,7 @@
 
   "files": {
     "ipxe": {
-      "file": { "base": "ipxe", "ext": "tgz" }
+      "file": { "base": "ipxe", "ext": "tar.gz" }
     },
 
     "platboot": {
