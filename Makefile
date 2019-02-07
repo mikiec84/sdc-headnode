@@ -366,7 +366,7 @@ USBKEY_SCRIPTS = \
 	scripts/update-usbkey.5.copy-contents.js
 
 USBKEY_TARBALLS = \
-	cache/file.ipxe.tgz \
+	cache/file.ipxe.tar.gz \
 	cache/file.platboot.tgz
 
 $(USBKEY_TARBALLS): download
