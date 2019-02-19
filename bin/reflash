@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2018, Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 #
 # This tool is for reflashing an existing headnode with a new tar image. There
@@ -547,9 +547,10 @@ overwrite_usb_key()
             set -o xtrace
         fi
 
-        # We mounted above, check device now
-        USB_DEV=\$(mount -p | grep " /mnt/usbkey " | cut -d ' ' -f1 \
-            | sed -e "s|/dsk/|/rdsk/|" -e 's/:1\$//' -e 's/p1\$/p0/')
+	# We mounted above, derive the p0 device
+        DISKPAT="^/dev/dsk/\\(.*\\)[ps][0-9]\\(:1\\)*"
+        USB_DEV=\$(mount -p | grep "\$DISKPAT - /mnt/usbkey " | \\
+            sed -e "s+\$DISKPAT .*+/dev/rdsk/\\1p0+")
 
         if [[ -z \${USB_DEV} ]]; then
             echo "FATAL: Unable to determine USB device." >&2
