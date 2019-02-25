@@ -181,10 +181,7 @@ function create_directories
 function generate_loader_config
 {
     local serial_dev
-    local enable_dr
     local console
-    # XXX - add code to handle ENABLE_DR
-    local DR_VAL='#DR'
     local ipxe
 
     echo "==> Generating boot loader configuration "
@@ -192,10 +189,7 @@ function generate_loader_config
     serial_dev=$(build_spec serial-dev)
     os_console=$(build_spec console)
     ipxe=$(build_spec ipxe)
-    # Feature flag for HEAD-2093
-    enable_dr=$(build_spec enable-disaster-recovery)
 
-    [[ ${enable_dr} == "true" ]] && DR_VAL=''
     [[ -z "$ipxe" ]] && ipxe="true"
     [[ -z "${serial_dev}" ]] && serial_dev="ttyb"
     [[ -z "${os_console}" ]] && os_console="${serial_dev}"
