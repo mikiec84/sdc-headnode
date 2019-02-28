@@ -11,15 +11,15 @@
 
 PLATFORM=$(uname -s)
 
-SUCMD='sudo'
 TAR="tar"
 PCFSTAR="tar"
 
 if [[ "$PLATFORM" == "SunOS" ]]; then
-    SUCMD='pfexec'
+    SUCMD="pfexec"
     TAR="gtar"
     PCFSTAR="gtar"
 elif [[ "$PLATFORM" == "Darwin" ]]; then
+    SUCMD=""
     #
     # On Darwin (Mac OS X), trying to extract a tarball into a PCFS mountpoint
     # fails, as a result of tar trying create the `.` (dot) directory. This
@@ -28,6 +28,8 @@ elif [[ "$PLATFORM" == "Darwin" ]]; then
     # meaning we can't use the option generally.  --exclude doesn't work.
     #
     PCFSTAR="tar --include=?*"
+elif [[ "$PLATFORM" == "Linux" ]]; then
+    SUCMD="sudo"
 fi
 
 function fatal
