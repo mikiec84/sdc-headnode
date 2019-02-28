@@ -108,6 +108,7 @@ function unpack_image
 {
     echo -n "==> Unpacking USB image... "
     rm -f "$IMG_TMP_DIR/$OUTPUT_IMG"
+	set -x
     (cd "$IMG_TMP_DIR" &&
         $TAR -xzf "$TEMPLATE_IMG" "$PARTMAP" "$OUTPUT_IMG") ||
         fatal "Unable to unpack USB image"
@@ -145,7 +146,7 @@ function copy_to_mount
             && rsync -av .[a-zA-Z]* * $MNT_DIR/) \
             || fatal "Unable to copy files to mount"
     else
-        (cd ${MNT_DIR} && ${TAR} --no-same-owner \
+        (cd ${MNT_DIR} && ${PCFSTAR} --no-same-owner \
          -xvzf $TAR_BUILD_FILENAME) \
             || fatal "Unable to copy files to mount"
     fi
