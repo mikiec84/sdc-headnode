@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright 2018 Joyent, Inc.
+# Copyright 2019 Joyent, Inc.
 #
 
 ROOT=$(cd $(dirname $0)/../; pwd)
@@ -108,7 +108,6 @@ function unpack_image
 {
     echo -n "==> Unpacking USB image... "
     rm -f "$IMG_TMP_DIR/$OUTPUT_IMG"
-	set -x
     (cd "$IMG_TMP_DIR" &&
         $TAR -xzf "$TEMPLATE_IMG" "$PARTMAP" "$OUTPUT_IMG") ||
         fatal "Unable to unpack USB image"

@@ -6,14 +6,14 @@
 #
 
 #
-# Copyright (c) 2018, Joyent, Inc.
+# Copyright (c) 2019, Joyent, Inc.
 #
 
 # This script is intended to copy any changes that a sysadmin might legitimately
 # make on the headnode image back to the USB stick so that those changes
 # are persistent.
 #
-# This cmd can be invoked by the user and also be sdc-backup.  Since its
+# This cmd can be invoked by the user and also by sdc-backup.  Since its
 # invoked by sdc-backup, we don't want to modify anything on the USB stick
 # unless there are actual changes.
 #
