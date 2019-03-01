@@ -171,9 +171,9 @@ function create_directories
 }
 
 #
-# The console configuration is a little bit complicated below.  We want loader
-# to appear on everything available, but prefer any explicitly specified
-# console, defaulting to ttyb.
+# The console configuration is a little bit complicated below.  Since some
+# system's redirection uses ttya, and some ttyb, we'll configure loader to
+# attempt to use all possible ttys.
 #
 # But we also need to pass through "os_console" for the kernel, so we can see
 # kernel output on the console requested.

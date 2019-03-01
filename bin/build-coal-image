@@ -133,7 +133,7 @@ function expand_image
           -n ${USB_SKIP} && -n ${USB_PADDING} ]]; then
         echo ""
         local file=$IMG_TMP_DIR/${OUTPUT_IMG}
-        ${SUCMD} dd if=/dev/zero of=${file} conv=notrunc seek=${USB_SKIP} \
+        dd if=/dev/zero of=${file} conv=notrunc seek=${USB_SKIP} \
            bs=512 count=${USB_PADDING}
     else
         echo "skipped."
@@ -318,15 +318,15 @@ function cleanup
 
     unmount_loopback
 
-    ${SUCMD} rm -f $IMG_TMP_DIR/${OUTPUT_IMG}
-    ${SUCMD} rm -f $IMG_TMP_DIR/$PARTMAP
-    ${SUCMD} rm -f ${IMG_TMP_DIR}/rootfs.img
-    ${SUCMD} rm -f ${IMG_TMP_DIR}/root.password.${LIVEIMG_VERSION}
-    ${SUCMD} rm -rf $IMG_TMP_DIR/*.manifest
-    ${SUCMD} rm -rf $IMG_TMP_DIR/fs.*
-    ${SUCMD} rm -rf $IMG_TMP_DIR/output.*
-    ${SUCMD} rmdir $MNT_DIR
-    ${SUCMD} rmdir $IMG_TMP_DIR
+    rm -f $IMG_TMP_DIR/${OUTPUT_IMG}
+    rm -f $IMG_TMP_DIR/$PARTMAP
+    rm -f ${IMG_TMP_DIR}/rootfs.img
+    rm -f ${IMG_TMP_DIR}/root.password.${LIVEIMG_VERSION}
+    rm -rf $IMG_TMP_DIR/*.manifest
+    rm -rf $IMG_TMP_DIR/fs.*
+    rm -rf $IMG_TMP_DIR/output.*
+    rmdir $MNT_DIR
+    rmdir $IMG_TMP_DIR
 }
 
 unpack_image

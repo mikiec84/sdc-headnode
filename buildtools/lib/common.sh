@@ -73,15 +73,13 @@ function mount_root_image
     echo -n "==> Mounting new USB image... "
     if [[ "$PLATFORM" == "Darwin" ]]; then
         [ ! -d ${ROOT}/cache/tmp_volumes ] && mkdir -p ${ROOT}/cache/tmp_volumes
-        ${SUCMD} hdiutil attach -nomount \
-            -imagekey diskimage-class=CRawDiskImage \
+        hdiutil attach -nomount -imagekey diskimage-class=CRawDiskImage \
             $IMG_TMP_DIR/${OUTPUT_IMG} >/tmp/output.hdiattach.$$ 2>&1
         LOOPBACK=`grep "GUID_partition_scheme" /tmp/output.hdiattach.$$ \
             | awk '{ print $1 }'`
         MNT_DIR=$(mktemp -d ${ROOT}/cache/tmp_volumes/root.XXXX)
-        ${SUCMD} mount -t msdos ${LOOPBACK}s3 $MNT_DIR
+        mount -t msdos ${LOOPBACK}s3 $MNT_DIR
     elif [[ "$PLATFORM" == "Linux" ]]; then
-        # XXX - might need to fix this up
         MNT_DIR="/tmp/sdc_image.$$"
         mkdir -p "$MNT_DIR"
         LOOPBACK=$IMG_TMP_DIR/${OUTPUT_IMG}
@@ -90,10 +88,10 @@ function mount_root_image
         ${SUCMD} mount -o "loop,offset=${OFFSET},uid=${EUID},gid=${GROUPS[0]}" \
             "${LOOPBACK}" "${MNT_DIR}"
     else
-        ${SUCMD} mkdir -p ${MNT_DIR}
+        mkdir -p ${MNT_DIR}
         ROOTOFF=$(nawk '$1 == "root" { print $3 }' <$IMG_TMP_DIR/$PARTMAP)
         ROOTSIZE=$(nawk '$1 == "root" { print $4 }' <$IMG_TMP_DIR/$PARTMAP)
-        ${SUCMD} /usr/bin/dd bs=1048576 conv=notrunc \
+        /usr/bin/dd bs=1048576 conv=notrunc \
             iseek=$(( $ROOTOFF / 1048576 )) count=$(( $ROOTSIZE / 1048576 )) \
             if=$IMG_TMP_DIR/${OUTPUT_IMG} of=$IMG_TMP_DIR/rootfs.img
         ${SUCMD} mount -F pcfs -o foldcase ${IMG_TMP_DIR}/rootfs.img ${MNT_DIR}
@@ -103,12 +101,12 @@ function mount_root_image
 
 function unmount_loopback
 {
-    if ${SUCMD} mount | grep $MNT_DIR >/dev/null; then
+    if mount | grep $MNT_DIR >/dev/null; then
         ${SUCMD} umount $MNT_DIR
     fi
 
     if [[ -n "$LOOPBACK" && "$PLATFORM" == "Darwin" ]]; then
-        ${SUCMD} hdiutil detach ${LOOPBACK} || /usr/bin/true
+        hdiutil detach ${LOOPBACK} || /usr/bin/true
     fi
 
     sync; sync
@@ -127,7 +125,7 @@ function unmount_root_image
         ROOTOFF=$(nawk '$1 == "root" { print $3 }' <$IMG_TMP_DIR/$PARTMAP)
         ROOTSIZE=$(nawk '$1 == "root" { print $4 }' <$IMG_TMP_DIR/$PARTMAP)
 
-        ${SUCMD} /usr/bin/dd bs=1048576 conv=notrunc \
+        /usr/bin/dd bs=1048576 conv=notrunc \
             oseek=$(( $ROOTOFF / 1048576 )) count=$(( $ROOTSIZE / 1048576 )) \
             if=$IMG_TMP_DIR/rootfs.img of=$IMG_TMP_DIR/${OUTPUT_IMG}
     fi

@@ -202,13 +202,13 @@ function cleanup
 
     unmount_loopback
 
-    ${SUCMD} rm -f $IMG_TMP_DIR/*gb.img
-    ${SUCMD} rm -f $IMG_TMP_DIR/*gb.partition.map
-    ${SUCMD} rm -f ${IMG_TMP_DIR}/rootfs.img
-    ${SUCMD} rm -rf $IMG_TMP_DIR/fs.*
-    ${SUCMD} rm -rf $IMG_TMP_DIR/output.*
-    ${SUCMD} rmdir $MNT_DIR
-    ${SUCMD} rmdir $IMG_TMP_DIR
+    rm -f $IMG_TMP_DIR/*gb.img
+    rm -f $IMG_TMP_DIR/*gb.partition.map
+    rm -f ${IMG_TMP_DIR}/rootfs.img
+    rm -rf $IMG_TMP_DIR/fs.*
+    rm -rf $IMG_TMP_DIR/output.*
+    rmdir $MNT_DIR
+    rmdir $IMG_TMP_DIR
 }
 
 unpack_image

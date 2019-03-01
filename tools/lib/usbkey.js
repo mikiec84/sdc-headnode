@@ -1008,7 +1008,7 @@ sedfile(file, search, replace, callback)
     mod_fs.readFile(file, 'utf8', function (err, data) {
         var outfile = file + '.tmp';
         var replaced = false;
-    	var out = '';
+        var out = '';
         var i;
 
         if (err) {
@@ -1020,11 +1020,11 @@ sedfile(file, search, replace, callback)
 
         for (i = 0; i < lines.length; i++) {
             var line = lines[i];
-    		out += line.replace(new RegExp(search, 'g'), function () {
+            out += line.replace(new RegExp(search, 'g'), function () {
                 replaced = true;
                 return replace;
             });
-    		out += mod_os.EOL;
+            out += mod_os.EOL;
         }
 
         if (!replaced) {
