@@ -49,6 +49,7 @@ function usage()
         '    delete [-f] <uuid>                    - remove all CNAPI information about',
         '                                            this server',
         '    jobs <uuid>                           - list all jobs for this server',
+        '    set [<uuid>] param=value              - set parameter (for a server)',
         '    list                                  - list all servers in this DC',
         '    lookup [-h1jHc] [field=val ...]       - lookup servers matching given fields',
         '    ips <uuid>                            - output the IPs for this server',
@@ -82,6 +83,22 @@ function setup_usage()
         '    layout=<single|mirror|raidz1|raidz2|raidz3>       - disk layout',
         '    postsetup_script=<string>                         - script to be run right after server setup',
         '    (external|admin)_nic=<JSON object>                - nic tags for the server',
+        ''
+    ].join('\n'));
+    /* END JSSTYLED */
+}
+
+function set_usage()
+{
+    /* BEGIN JSSTYLED */
+    console.log([
+        '',
+        'Usage:',
+        '        /opt/smartdc/bin/sdc-server set [<uuid>] param=value',
+        '',
+        'Possible params:',
+        '',
+        '    ht_enabled=<true|false>                           - Hyper-threading enabled on boot',
         ''
     ].join('\n'));
     /* END JSSTYLED */
@@ -141,6 +158,13 @@ function createClient(api, callback) {
         case 'NAPI':
             handle = new sdcClients.NAPI({
                 url: sdc_config.napi_client_url,
+                agent: false
+            });
+            callback(null, handle);
+            return;
+        case 'SAPI':
+            handle = new sdcClients.SAPI({
+                url: 'http://' + sdc_config.sapi_admin_ips,
                 agent: false
             });
             callback(null, handle);
@@ -1045,6 +1069,122 @@ function runServerWorkflow(server_uuid, func, options, callback)
     ], callback);
 }
 
+function setServerKernelArg(server_uuid, name, value, callback)
+{
+    assert.uuid(server_uuid, 'server_uuid');
+    assert.string(name, 'name');
+    assert.string(value, 'value');
+    assert.func(callback, 'callback');
+
+    var cnapi;
+
+    vasync.pipeline({ 'funcs': [
+        function create_cnapi_client(_, cb) {
+            createClient('CNAPI', function (err, handle) {
+                if (!err) {
+                    cnapi = handle;
+                } else {
+                    err.api = 'CNAPI';
+                }
+                cb(err);
+            });
+        }, function set_boot_params(_, cb) {
+           var params = { kernel_args: {} };
+           params.kernel_args[name] = value;
+
+           cnapi.setBootParams(server_uuid, params, {}, cb);
+        }
+    ]}, callback);
+}
+
+/*
+ * Set a default CNAPI parameter via SAPI.
+ */
+function setDefaultParam(name, value, callback)
+{
+    assert.string(name, 'name');
+    assert.string(value, 'value');
+    assert.func(callback, 'callback');
+
+    var sapi;
+    var app;
+    var svc;
+
+    vasync.pipeline({ 'funcs': [
+        function create_sapi_client(_, cb) {
+            createClient('SAPI', function (err, handle) {
+                if (!err) {
+                    sapi = handle;
+                } else {
+                    err.api = 'SAPI';
+                }
+                cb(err);
+            });
+        }, function getSdcApp(_, cb) {
+            sapi.listApplications({ name: 'sdc' }, function (err, apps) {
+                if (!err)
+                    app = apps[0];
+                cb(err);
+            });
+        }, function getCnapiService(_, cb) {
+            var searchOpts = {name: 'imgapi', application_uuid: app.uuid};
+            sapi.listServices(searchOpts, function (err, svcs) {
+                if (!err)
+                    svc = svcs[0];
+                cb(err);
+            });
+        }, function setServiceMetadata(_, cb) {
+            var md = {};
+            md[name] = value;
+
+            // FIXME: no refresh of config agent like in sdcadm?? Why?
+            sapi.updateService(svc.uuid, {metadata: md}, function (err) {
+                cb(err);
+            });
+        }
+    ]}, callback);
+}
+
+function setParam(server_uuid, param, callback)
+{
+    assert.string(server_uuid, 'server_uuid');
+    assert.string(param, 'param');
+    assert.func(callback, 'callback');
+
+    var i = param.indexOf('=');
+
+    if (i === -1) {
+        set_usage();
+        callback(new Error('incorrect arguments for set'));
+        return;
+    }
+
+    var name = param.slice(0, i);
+    var value = param.slice(i + 1);
+
+    switch (name) {
+        case 'ht_enabled':
+            if (['false', 'true'].indexOf(value) === -1) {
+                set_usage();
+                callback(new Error('incorrect value ' + value +
+                    ' for ' + name));
+                break;
+            }
+
+            if (server_uuid) {
+                setServerKernelArg(server_uuid, name, value, callback);
+            } else {
+                setDefaultParam(name, value, callback);
+            }
+
+            break;
+
+        default:
+            callback(new Error('unknown server parameter' + name));
+            break;
+    }
+}
+
 function dispatchCommand(command, args, callback)
 {
     var rl;
@@ -1247,6 +1387,28 @@ function dispatchCommand(command, args, callback)
                 command === 'setup' ? 'setupServer' : 'updateNics',
                 setupOpts, callback);
 
+            break;
+
+        case 'set': // FIXME: get?
+            if (args.length === 1 && ['help', '-h'].indexOf(args[0]) !== -1) {
+                set_usage();
+                callback();
+                return;
+            }
+
+            var uuid = undefined;
+
+            if (isUUID(args[0])) {
+                uuid = args.shift();
+            }
+
+            if (args.length !== 1) {
+                set_usage();
+                callback(new Error('incorrect arguments for set'));
+                return;
+            }
+
+            setParam(uuid, args[0], callback);
             break;
 
         default:
