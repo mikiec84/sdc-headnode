@@ -5,6 +5,7 @@
   "coal-enable-serial": true,
   "no-rabbit": true,
   "clean-cache": true,
+  "ht_enabled": false,
   "// joyent-build": "set to true to enable ancillary repository use",
 
   "features": {
