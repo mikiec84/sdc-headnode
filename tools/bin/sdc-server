@@ -26,6 +26,7 @@ var readline = require('readline');
 var netconfig = require('triton-netconfig');
 var util = require('util');
 var vasync = require('vasync');
+var Logger = require('/usr/node/node_modules/bunyan');
 
 var SDC_MODULES = '/opt/smartdc/node_modules';
 var restifyClients = require(SDC_MODULES +
@@ -165,6 +166,13 @@ function createClient(api, callback) {
         case 'SAPI':
             handle = new sdcClients.SAPI({
                 url: 'http://' + sdc_config.sapi_admin_ips,
+                // FIXME
+                log: new Logger({
+                    name: 'sdc-server',
+                    level: 'trace',
+                    serializers: Logger.stdSerializers
+                    }),
+                version: '~2',
                 agent: false
             });
             callback(null, handle);
@@ -1071,7 +1079,7 @@ function runServerWorkflow(server_uuid, func, options, callback)
 
 function setServerKernelArg(server_uuid, name, value, callback)
 {
-    assert.uuid(server_uuid, 'server_uuid');
+    assert.string(server_uuid, 'server_uuid');
     assert.string(name, 'name');
     assert.string(value, 'value');
     assert.func(callback, 'callback');
@@ -1098,7 +1106,9 @@ function setServerKernelArg(server_uuid, name, value, callback)
 }
 
 /*
- * Set a default CNAPI parameter via SAPI.
+ * Set a default CNAPI parameter via SAPI. this will only be reflected
+ * once each CNAPI instance's config-agent notices the change. It's not
+ * ideal, but right now, there's no simple way to refresh all instances.
  */
 function setDefaultParam(name, value, callback)
 {
@@ -1127,7 +1137,7 @@ function setDefaultParam(name, value, callback)
                 cb(err);
             });
         }, function getCnapiService(_, cb) {
-            var searchOpts = {name: 'imgapi', application_uuid: app.uuid};
+            var searchOpts = {name: 'cnapi', application_uuid: app.uuid};
             sapi.listServices(searchOpts, function (err, svcs) {
                 if (!err)
                     svc = svcs[0];
@@ -1137,7 +1147,6 @@ function setDefaultParam(name, value, callback)
             var md = {};
             md[name] = value;
 
-            // FIXME: no refresh of config agent like in sdcadm?? Why?
             sapi.updateService(svc.uuid, {metadata: md}, function (err) {
                 cb(err);
             });
@@ -1147,7 +1156,7 @@ function setDefaultParam(name, value, callback)
 
 function setParam(server_uuid, param, callback)
 {
-    assert.string(server_uuid, 'server_uuid');
+    assert.optionalString(server_uuid, 'server_uuid');
     assert.string(param, 'param');
     assert.func(callback, 'callback');
 
@@ -1174,7 +1183,7 @@ function setParam(server_uuid, param, callback)
             if (server_uuid) {
                 setServerKernelArg(server_uuid, name, value, callback);
             } else {
-                setDefaultParam(name, value, callback);
+                setDefaultParam('HT_ENABLED_DEFAULT', value, callback);
             }
 
             break;
