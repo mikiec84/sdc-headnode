@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2019, Joyent, Inc.
+ * Copyright 2019 Joyent, Inc.
  */
 
 var mod_fs = require('fs');
@@ -998,6 +998,92 @@ ensure_usbkey_mounted(options, callback)
 }
 
 function
+get_variable_loader(mountpoint, name, callback)
+{
+    mod_assert.string(mountpoint, 'mountpoint');
+    mod_assert.string(name, 'name');
+    mod_assert.func(callback, 'callback');
+
+    var search = '^\\s*' + name + '\\s*=\\s*"?\([^"]*\)"?\\s*$';
+    var file = mountpoint + '/boot/loader.conf';
+
+    mod_fs.readFile(file, 'utf8', function (err, data) {
+        var i;
+
+        if (err) {
+            callback(new VError(err, 'failed to read ' + file));
+            return;
+        }
+
+        var lines = data.replace(/\n$/, '').split(mod_os.EOL);
+
+        for (i = 0; i < lines.length; i++) {
+            var m = lines[i].match(search);
+            if (m) {
+                 callback(null, m[1]);
+                 return;
+            }
+        }
+
+        mod_fs.readFile(mountpoint + '/boot/loader.conf.local',
+            'utf8', function (err, data) {
+                var i;
+
+            if (err) {
+                callback(null, null);
+                return;
+            }
+
+            var lines = data.replace(/\n$/, '').split(mod_os.EOL);
+
+            for (i = 0; i < lines.length; i++) {
+                var m = lines[i].match(search);
+                if (m) {
+                    callback(null, m[1]);
+                    return;
+                }
+            }
+
+            callback(null, null);
+        });
+    });
+}
+
+function
+get_variable(name, callback)
+{
+    mod_assert.string(name, 'name');
+    mod_assert.func(callback, 'callback');
+
+    ensure_usbkey_mounted({}, function (err) {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        get_usbkey_mount_status({}, function (err, status) {
+            if (err) {
+                callback(err);
+                return;
+            }
+
+            switch (status.version) {
+            case 1:
+                callback(new VError('get variable is not supported for grub'));
+                return;
+            case 2:
+                get_variable_loader(status.mountpoint, name, callback);
+                return;
+            default:
+                callback(new VError('unknown USB key version ' +
+                    status.version));
+                return;
+            }
+        });
+    });
+}
+
+function
 sedfile(file, search, replace, callback)
 {
     mod_assert.string(file, 'file');
@@ -1070,7 +1156,15 @@ set_variable_grub(mountpoint, name, value, callback)
     } else if (name === 'os_console') {
         search = '^\\s*variable\\s+os_console\\s+.*$';
         replace = 'variable ' + name + ' ' + value;
+    } else if (name === 'ht_enabled') {
+        callback(new VError('setting kernel argument ' + name + ' ' + value +
+            'is not supported for grub; please edit menu.lst by hand'));
     } else {
+        /*
+         * Note that we're forced to assume here that this is a grub setting,
+         * rather than a boot argument, as we cannot differentiate. This is
+         * why we explicitly check for ht_enabled above.
+         */
         search = '^\\s*' + name + '\\s+.*$';
         replace = name + ' ' + value;
     }
@@ -1105,14 +1199,7 @@ set_variable_loader(mountpoint, name, value, callback)
     var search = '^\\s*' + name + '\\s*=\\s*.*$';
     var replace = name + '=' + value;
 
-    sedfile(mountpoint + '/boot/loader.conf', search, replace, function (err) {
-        if (err) {
-            callback(err);
-            return;
-        }
-
-        callback();
-    });
+    sedfile(mountpoint + '/boot/loader.conf', search, replace, callback);
 }
 
 function
@@ -1155,6 +1242,7 @@ module.exports = {
     ensure_usbkey_unmounted: ensure_usbkey_unmounted,
     ensure_usbkey_mounted: ensure_usbkey_mounted,
     get_usbkey_mount_status: get_usbkey_mount_status,
+    get_variable: get_variable,
     set_variable: set_variable
 };
 
