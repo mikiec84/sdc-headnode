@@ -1115,7 +1115,7 @@ function setServerKernelArg(server_uuid, name, value, callback)
                 cb(err);
             });
         }, function setKernelArg(_, cb) {
-            cnapi.listServers({uuids: server_uuid}, function (err, servers) {
+            cnapi.listServers({ uuids: server_uuid }, function (err, servers) {
                 if (err) {
                     err.api = 'CNAPI';
                     cb(err);
@@ -1174,7 +1174,7 @@ function setSAPIParam(name, value, callback)
                 cb(err);
             });
         }, function getCnapiService(_, cb) {
-            var searchOpts = {name: 'cnapi', application_uuid: app.uuid};
+            var searchOpts = { name: 'cnapi', application_uuid: app.uuid };
             sapi.listServices(searchOpts, function (err, svcs) {
                 if (!err)
                     svc = svcs[0];
@@ -1184,9 +1184,7 @@ function setSAPIParam(name, value, callback)
             var md = {};
             md[name] = value;
 
-            sapi.updateService(svc.uuid, {metadata: md}, function (err) {
-                cb(err);
-            });
+            sapi.updateService(svc.uuid, { metadata: md }, cb);
         }
     ]}, callback);
 }
@@ -1247,7 +1245,7 @@ function getSAPIParam(name, default_value, callback)
                 cb(err);
             });
         }, function getCnapiService(_, cb) {
-            var searchOpts = {name: 'cnapi', application_uuid: app.uuid};
+            var searchOpts = { name: 'cnapi', application_uuid: app.uuid };
             sapi.listServices(searchOpts, function (err, svcs) {
                 if (!err)
                     svc = svcs[0];
@@ -1291,7 +1289,7 @@ function getServerKernelArg(server_uuid, name, sapi_param, callback)
                 cb(err);
             });
         }, function getKernelArg(_, cb) {
-            cnapi.listServers({uuids: server_uuid}, function (err, servers) {
+            cnapi.listServers({ uuids: server_uuid }, function (err, servers) {
                 if (err) {
                     err.api = 'CNAPI';
                     cb(err);
