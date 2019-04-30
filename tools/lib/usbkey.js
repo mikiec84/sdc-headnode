@@ -1158,7 +1158,7 @@ set_variable_grub(mountpoint, name, value, callback)
         replace = 'variable ' + name + ' ' + value;
     } else if (name === 'ht_enabled') {
         callback(new VError('setting kernel argument ' + name + ' ' + value +
-            'is not supported for grub; please edit menu.lst by hand'));
+            ' is not supported for grub; please edit menu.lst by hand'));
     } else {
         /*
          * Note that we're forced to assume here that this is a grub setting,
