@@ -113,7 +113,7 @@ function set_usage()
     console.log([
         '',
         'Usage:',
-        '        /opt/smartdc/bin/sdc-server set [<uuid>] param=value',
+        '        /opt/smartdc/bin/sdc-server set [<uuid>] param value',
         '',
         'Possible params:',
         '',
@@ -1116,18 +1116,18 @@ function setServerKernelArg(server_uuid, name, value, callback)
             });
         }, function setKernelArg(_, cb) {
             cnapi.listServers({uuids: server_uuid}, function (err, servers) {
+                if (err) {
+                    err.api = 'CNAPI';
+                    cb(err);
+                    return;
+                }
+
                 if (servers.length !== 1) {
                     cb(new Error('unknown server ' + server_uuid));
                     return;
                 }
 
                 var server = servers[0];
-
-                if (err) {
-                    err.api = 'CNAPI';
-                    cb(err);
-                    return;
-                }
 
                 if (server.headnode) {
                     usbkey.set_variable(name, value, cb);
@@ -1292,18 +1292,18 @@ function getServerKernelArg(server_uuid, name, sapi_param, callback)
             });
         }, function getKernelArg(_, cb) {
             cnapi.listServers({uuids: server_uuid}, function (err, servers) {
+                if (err) {
+                    err.api = 'CNAPI';
+                    cb(err);
+                    return;
+                }
+
                 if (servers.length !== 1) {
                     cb(new Error('unknown server ' + server_uuid));
                     return;
                 }
 
                 var server = servers[0];
-
-                if (err) {
-                    err.api = 'CNAPI';
-                    cb(err);
-                    return;
-                }
 
                 if (server.headnode) {
                     usbkey.get_variable(name, function (err, value) {

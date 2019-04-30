@@ -1069,7 +1069,7 @@ get_variable(name, callback)
 
             switch (status.version) {
             case 1:
-                callback(new VError('get variable is not supported for grub'));
+                callback(new VError('get-variable is not supported for grub'));
                 return;
             case 2:
                 get_variable_loader(status.mountpoint, name, callback);
@@ -1170,21 +1170,14 @@ set_variable_grub(mountpoint, name, value, callback)
     }
 
     sedfile(mountpoint + '/boot/grub/menu.lst',
-      search, replace, function (err) {
+        search, replace, function (err) {
         if (err) {
             callback(err);
             return;
         }
 
         sedfile(mountpoint + '/boot/grub/menu.lst.tmpl',
-          search, replace, function (err) {
-            if (err) {
-                callback(err);
-                return;
-            }
-
-           callback();
-        });
+          search, replace, callback);
     });
 }
 
