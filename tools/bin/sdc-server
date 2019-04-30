@@ -51,8 +51,8 @@ function usage()
         '    delete [-f] <uuid>                    - remove all CNAPI information about',
         '                                            this server',
         '    jobs <uuid>                           - list all jobs for this server',
-        '    get [<uuid>] param=value              - get parameter (for a server)',
-        '    set [<uuid>] param=value              - set parameter (for a server)',
+        '    get [<uuid>] param                    - get parameter (for a server)',
+        '    set [<uuid>] param value              - set parameter (for a server)',
         '    list                                  - list all servers in this DC',
         '    lookup [-h1jHc] [field=val ...]       - lookup servers matching given fields',
         '    ips <uuid>                            - output the IPs for this server',
@@ -101,7 +101,7 @@ function get_usage()
         '',
         'Possible params:',
         '',
-        '    ht_enabled=<true|false>                           - Hyper-threading enabled on boot',
+        '    ht_enabled <true|false>                           - Hyper-threading enabled on boot',
         ''
     ].join('\n'));
     /* END JSSTYLED */
@@ -117,7 +117,7 @@ function set_usage()
         '',
         'Possible params:',
         '',
-        '    ht_enabled=<true|false>                           - Hyper-threading enabled on boot',
+        '    ht_enabled <true|false>                           - Hyper-threading enabled on boot',
         ''
     ].join('\n'));
     /* END JSSTYLED */
@@ -1116,6 +1116,11 @@ function setServerKernelArg(server_uuid, name, value, callback)
             });
         }, function setKernelArg(_, cb) {
             cnapi.listServers({uuids: server_uuid}, function (err, servers) {
+                if (servers.length !== 1) {
+                    cb(new Error('unknown server ' + server_uuid));
+                    return;
+                }
+
                 var server = servers[0];
 
                 if (err) {
@@ -1186,22 +1191,12 @@ function setSAPIParam(name, value, callback)
     ]}, callback);
 }
 
-function setParam(server_uuid, param, callback)
+function setParam(server_uuid, name, value, callback)
 {
     assert.optionalString(server_uuid, 'server_uuid');
-    assert.string(param, 'param');
+    assert.string(name, 'name');
+    assert.string(value, 'value');
     assert.func(callback, 'callback');
-
-    var i = param.indexOf('=');
-
-    if (i === -1) {
-        set_usage();
-        callback(new Error('incorrect arguments for set'));
-        return;
-    }
-
-    var name = param.slice(0, i);
-    var value = param.slice(i + 1);
 
     switch (name) {
         case 'ht_enabled':
@@ -1221,72 +1216,9 @@ function setParam(server_uuid, param, callback)
             break;
 
         default:
-            callback(new Error('unknown server parameter' + name));
+            callback(new Error('unknown server parameter ' + name));
             break;
     }
-}
-
-function getServerKernelArg(server_uuid, name, callback)
-{
-    assert.string(server_uuid, 'server_uuid');
-    assert.string(name, 'name');
-    assert.func(callback, 'callback');
-
-    var cnapi;
-
-    vasync.pipeline({ 'funcs': [
-        function createCNAPIClient(_, cb) {
-            createClient('CNAPI', function (err, handle) {
-                if (!err) {
-                    cnapi = handle;
-                } else {
-                    err.api = 'CNAPI';
-                }
-                cb(err);
-            });
-        }, function getKernelArg(_, cb) {
-            cnapi.listServers({uuids: server_uuid}, function (err, servers) {
-                var server = servers[0];
-
-                if (err) {
-                    err.api = 'CNAPI';
-                    cb(err);
-                    return;
-                }
-
-                if (server.headnode) {
-                    usbkey.get_variable(name, function (err, value) {
-                        if (!err) {
-                            if (value !== null) {
-                                console.log(value);
-                            } else {
-                                console.log('unset');
-                            }
-                        }
-
-                        cb(err);
-                    });
-
-                    return;
-                }
-
-                cnapi.getBootParams(server_uuid, {}, function (err, params) {
-                        if (err) {
-                            err.api = 'CNAPI';
-                        } else {
-                            var value = params.kernel_args[name];
-                            if (typeof (value) !== 'undefined') {
-                                console.log(value);
-                            } else {
-                                console.log('unset');
-                            }
-                        }
-
-                       cb(err);
-                });
-            });
-        }
-    ]}, callback);
 }
 
 function getSAPIParam(name, default_value, callback)
@@ -1340,6 +1272,76 @@ function getSAPIParam(name, default_value, callback)
     ]}, callback);
 }
 
+function getServerKernelArg(server_uuid, name, sapi_param, callback)
+{
+    assert.string(server_uuid, 'server_uuid');
+    assert.string(name, 'name');
+    assert.func(callback, 'callback');
+
+    var cnapi;
+
+    vasync.pipeline({ 'funcs': [
+        function createCNAPIClient(_, cb) {
+            createClient('CNAPI', function (err, handle) {
+                if (!err) {
+                    cnapi = handle;
+                } else {
+                    err.api = 'CNAPI';
+                }
+                cb(err);
+            });
+        }, function getKernelArg(_, cb) {
+            cnapi.listServers({uuids: server_uuid}, function (err, servers) {
+                if (servers.length !== 1) {
+                    cb(new Error('unknown server ' + server_uuid));
+                    return;
+                }
+
+                var server = servers[0];
+
+                if (err) {
+                    err.api = 'CNAPI';
+                    cb(err);
+                    return;
+                }
+
+                if (server.headnode) {
+                    usbkey.get_variable(name, function (err, value) {
+                        if (!err) {
+                            if (value !== null) {
+                                console.log(value);
+                            } else {
+                                console.log('unset');
+                            }
+                        }
+
+                        cb(err);
+                    });
+
+                    return;
+                }
+
+                cnapi.getBootParams(server_uuid, {}, function (err, params) {
+                    if (err) {
+                        err.api = 'CNAPI';
+                        cb(err);
+                        return;
+                    }
+
+                    var value = params.kernel_args[name];
+                    if (typeof (value) !== 'undefined') {
+                        console.log(value);
+                        cb();
+                        return;
+                    }
+
+                    getSAPIParam(sapi_param, false, cb);
+                });
+            });
+        }
+    ]}, callback);
+}
+
 function getParam(server_uuid, param, callback)
 {
     assert.optionalString(server_uuid, 'server_uuid');
@@ -1349,7 +1351,8 @@ function getParam(server_uuid, param, callback)
     switch (param) {
         case 'ht_enabled':
             if (server_uuid) {
-                getServerKernelArg(server_uuid, param, callback);
+                getServerKernelArg(server_uuid, param,
+                    'HT_ENABLED_DEFAULT', callback);
             } else {
                 getSAPIParam('HT_ENABLED_DEFAULT', false, callback);
             }
@@ -1357,7 +1360,7 @@ function getParam(server_uuid, param, callback)
             break;
 
         default:
-            callback(new Error('unknown server parameter' + param));
+            callback(new Error('unknown server parameter ' + param));
             break;
     }
 }
@@ -1601,13 +1604,13 @@ function dispatchCommand(command, args, callback)
                 server_uuid = args.shift();
             }
 
-            if (args.length !== 1) {
+            if (args.length !== 2) {
                 set_usage();
                 callback(new Error('incorrect arguments for ' + command));
                 return;
             }
 
-            setParam(server_uuid, args[0], callback);
+            setParam(server_uuid, args[0], args[1], callback);
             break;
 
         default:
