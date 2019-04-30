@@ -1177,7 +1177,7 @@ set_variable_grub(mountpoint, name, value, callback)
         }
 
         sedfile(mountpoint + '/boot/grub/menu.lst.tmpl',
-          search, replace, callback);
+            search, replace, callback);
     });
 }
 
