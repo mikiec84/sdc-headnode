@@ -1156,14 +1156,14 @@ set_variable_grub(mountpoint, name, value, callback)
     } else if (name === 'os_console') {
         search = '^\\s*variable\\s+os_console\\s+.*$';
         replace = 'variable ' + name + ' ' + value;
-    } else if (name === 'ht_enabled') {
+    } else if (name === 'smt_enabled') {
         callback(new VError('setting kernel argument ' + name + ' ' + value +
             ' is not supported for grub; please edit menu.lst by hand'));
     } else {
         /*
          * Note that we're forced to assume here that this is a grub setting,
          * rather than a boot argument, as we cannot differentiate. This is
-         * why we explicitly check for ht_enabled above.
+         * why we explicitly check for smt_enabled above.
          */
         search = '^\\s*' + name + '\\s+.*$';
         replace = name + ' ' + value;

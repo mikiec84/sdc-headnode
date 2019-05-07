@@ -101,7 +101,7 @@ function get_usage()
         '',
         'Possible params:',
         '',
-        '    ht_enabled <true|false>                           - Hyper-threading enabled on boot',
+        '    smt_enabled <true|false>                           - Simultaneous multi-threading enabled on boot',
         ''
     ].join('\n'));
     /* END JSSTYLED */
@@ -117,7 +117,7 @@ function set_usage()
         '',
         'Possible params:',
         '',
-        '    ht_enabled <true|false>                           - Hyper-threading enabled on boot',
+        '    smt_enabled <true|false>                           - Simultaneous multi-threading enabled on boot',
         ''
     ].join('\n'));
     /* END JSSTYLED */
@@ -1197,7 +1197,7 @@ function setParam(server_uuid, name, value, callback)
     assert.func(callback, 'callback');
 
     switch (name) {
-        case 'ht_enabled':
+        case 'smt_enabled':
             if (['false', 'true'].indexOf(value) === -1) {
                 set_usage();
                 callback(new Error('incorrect value ' + value +
@@ -1208,7 +1208,7 @@ function setParam(server_uuid, name, value, callback)
             if (server_uuid) {
                 setServerKernelArg(server_uuid, name, value, callback);
             } else {
-                setSAPIParam('HT_ENABLED_DEFAULT', value, callback);
+                setSAPIParam('SMT_ENABLED_DEFAULT', value, callback);
             }
 
             break;
@@ -1347,12 +1347,12 @@ function getParam(server_uuid, param, callback)
     assert.func(callback, 'callback');
 
     switch (param) {
-        case 'ht_enabled':
+        case 'smt_enabled':
             if (server_uuid) {
                 getServerKernelArg(server_uuid, param,
-                    'HT_ENABLED_DEFAULT', callback);
+                    'SMT_ENABLED_DEFAULT', callback);
             } else {
-                getSAPIParam('HT_ENABLED_DEFAULT', false, callback);
+                getSAPIParam('SMT_ENABLED_DEFAULT', false, callback);
             }
 
             break;
