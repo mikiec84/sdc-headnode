@@ -5,7 +5,7 @@
   "coal-enable-serial": true,
   "no-rabbit": true,
   "clean-cache": true,
-  "smt_enabled": false,
+  "smt_enabled": true,
   "// joyent-build": "set to true to enable ancillary repository use",
 
   "features": {

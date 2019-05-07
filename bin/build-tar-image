@@ -194,7 +194,7 @@ function generate_loader_config
     [[ -z "${ipxe}" ]] && ipxe="true"
     [[ -z "${serial_dev}" ]] && serial_dev="ttyb"
     [[ -z "${os_console}" ]] && os_console="${serial_dev}"
-    [[ -z "${smt_enabled}" ]] && smt_enabled="false"
+    [[ -z "${smt_enabled}" ]] && smt_enabled="true"
 
     case "${serial_dev}" in
     ttya) lconsole="ttya,ttyb,ttyc,ttyd" ;;
