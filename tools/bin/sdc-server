@@ -1333,7 +1333,7 @@ function getServerKernelArg(server_uuid, name, sapi_param, callback)
                         return;
                     }
 
-                    getSAPIParam(sapi_param, false, cb);
+                    getSAPIParam(sapi_param, true, cb);
                 });
             });
         }
@@ -1352,7 +1352,7 @@ function getParam(server_uuid, param, callback)
                 getServerKernelArg(server_uuid, param,
                     'SMT_ENABLED_DEFAULT', callback);
             } else {
-                getSAPIParam('SMT_ENABLED_DEFAULT', false, callback);
+                getSAPIParam('SMT_ENABLED_DEFAULT', true, callback);
             }
 
             break;
