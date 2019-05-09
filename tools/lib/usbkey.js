@@ -1006,10 +1006,9 @@ get_variable_loader(mountpoint, name, callback)
 
     var search = '^\\s*' + name + '\\s*=\\s*"?\([^"]*\)"?\\s*$';
     var file = mountpoint + '/boot/loader.conf';
+    var value = null;
 
     mod_fs.readFile(file, 'utf8', function (err, data) {
-        var i;
-
         if (err) {
             callback(new VError(err, 'failed to read ' + file));
             return;
@@ -1017,34 +1016,34 @@ get_variable_loader(mountpoint, name, callback)
 
         var lines = data.replace(/\n$/, '').split(mod_os.EOL);
 
-        for (i = 0; i < lines.length; i++) {
+        for (var i = 0; i < lines.length; i++) {
             var m = lines[i].match(search);
             if (m) {
-                 callback(null, m[1]);
-                 return;
+                 value = m[1];
             }
         }
 
-        mod_fs.readFile(mountpoint + '/boot/loader.conf.local',
-            'utf8', function (err, data) {
-                var i;
+        /*
+         * This file over-rides the previous one.
+         */
+        file = mountpoint + '/boot/loader.conf.local';
 
+        mod_fs.readFile(file, 'utf8', function (err, data) {
             if (err) {
-                callback(null, null);
+                callback(null, value);
                 return;
             }
 
             var lines = data.replace(/\n$/, '').split(mod_os.EOL);
 
-            for (i = 0; i < lines.length; i++) {
+            for (var i = 0; i < lines.length; i++) {
                 var m = lines[i].match(search);
                 if (m) {
-                    callback(null, m[1]);
-                    return;
+                    value = m[1];
                 }
             }
 
-            callback(null, null);
+            callback(null, value);
         });
     });
 }
