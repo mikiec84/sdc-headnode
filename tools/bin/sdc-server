@@ -22,6 +22,7 @@ var assert = require('assert-plus');
 var async = require('/usr/node/node_modules/async');
 var dashdash = require('dashdash');
 var exec = require('child_process').exec;
+var forkexec = require('forkexec');
 var readline = require('readline');
 var netconfig = require('triton-netconfig');
 var util = require('util');
@@ -161,22 +162,26 @@ function getConfig(callback)
     });
 }
 
-function HNSysinfo(callback) {
-    var cmd = '/usr/bin/sysinfo';
-
-    exec(cmd, function (err, stdout, stderr) {
-        if (!err) {
-            try {
-                callback(null, JSON.parse(stdout));
-                return;
-            } catch (e) {
-                err = e;
-            }
-        } else {
-            err.stdout = stdout;
-            err.stderr = stderr;
+function getHeadnodeSysinfo(callback) {
+    forkexec.forkExecWait({
+        argv: ['/usr/bin/sysinfo'],
+        includeStderr: true
+    }, function (err, info) {
+        if (err) {
+           callback(err);
+           return;
         }
-        callback(err);
+
+        var sysinfo;
+
+        try {
+            sysinfo = JSON.parse(info.stdout);
+        } catch (parseErr) {
+            callback(parseErr);
+            return;
+        }
+
+        callback(null, sysinfo);
     });
 }
 
@@ -1126,7 +1131,7 @@ function setServerKernelArg(server_uuid, name, value, callback)
 
     vasync.pipeline({ 'funcs': [
         function getHNSysinfo(_, cb) {
-            HNSysinfo(function (err, sysinfo) {
+            getHeadnodeSysinfo(function (err, sysinfo) {
                 if (!err) {
                     hn_uuid = sysinfo.UUID;
                 }
@@ -1299,7 +1304,7 @@ function getServerKernelArg(server_uuid, name, sapi_param, callback)
 
     vasync.pipeline({ 'funcs': [
         function getHNSysinfo(_, cb) {
-            HNSysinfo(function (err, sysinfo) {
+            getHeadnodeSysinfo(function (err, sysinfo) {
                 if (!err) {
                     hn_uuid = sysinfo.UUID;
                 }
