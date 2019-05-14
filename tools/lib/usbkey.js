@@ -1030,7 +1030,11 @@ get_variable_loader(mountpoint, name, callback)
 
         mod_fs.readFile(file, 'utf8', function (err, data) {
             if (err) {
-                callback(null, value);
+                if (err.code === 'ENOENT') {
+                    callback(null, value);
+                } else {
+                    callback(new VError(err, 'failed to read ' + file));
+                }
                 return;
             }
 

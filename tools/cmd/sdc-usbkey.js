@@ -571,7 +571,7 @@ do_get_variable(subcmd, opts, args, callback)
         return;
     }
 
-    if (args.length != 1) {
+    if (args.length !== 1) {
         self.do_help('help', {}, [ subcmd ], callback);
         return;
     }
@@ -585,7 +585,7 @@ do_get_variable(subcmd, opts, args, callback)
             if (value !== null) {
                 console.log(value);
             } else {
-                console.log('unset');
+                err = new VError('variable "%s" is not set', args[0]);
             }
         }
 

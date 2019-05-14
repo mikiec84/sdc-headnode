@@ -26,7 +26,7 @@ var readline = require('readline');
 var netconfig = require('triton-netconfig');
 var util = require('util');
 var vasync = require('vasync');
-var logger = require('/usr/node/node_modules/bunyan');
+var bunyan = require('/usr/node/node_modules/bunyan');
 var usbkey = require('../lib/usbkey');
 
 var SDC_MODULES = '/opt/smartdc/node_modules';
@@ -51,8 +51,8 @@ function usage()
         '    delete [-f] <uuid>                    - remove all CNAPI information about',
         '                                            this server',
         '    jobs <uuid>                           - list all jobs for this server',
-        '    get [<uuid>] param                    - get parameter (for a server)',
-        '    set [<uuid>] param value              - set parameter (for a server)',
+        '    get [<uuid>] <param>                  - get parameter (for a server)',
+        '    set [<uuid>] <param> <value>          - set parameter (for a server)',
         '    list                                  - list all servers in this DC',
         '    lookup [-h1jHc] [field=val ...]       - lookup servers matching given fields',
         '    ips <uuid>                            - output the IPs for this server',
@@ -97,7 +97,7 @@ function get_usage()
     console.log([
         '',
         'Usage:',
-        '        /opt/smartdc/bin/sdc-server get [<uuid>] param',
+        '        /opt/smartdc/bin/sdc-server get [<uuid>] <param>',
         '',
         'Possible params:',
         '',
@@ -113,7 +113,7 @@ function set_usage()
     console.log([
         '',
         'Usage:',
-        '        /opt/smartdc/bin/sdc-server set [<uuid>] param value',
+        '        /opt/smartdc/bin/sdc-server set [<uuid>] <param> <value>',
         '',
         'Possible params:',
         '',
@@ -161,6 +161,25 @@ function getConfig(callback)
     });
 }
 
+function HNSysinfo(callback) {
+    var cmd = '/usr/bin/sysinfo';
+
+    exec(cmd, function (err, stdout, stderr) {
+        if (!err) {
+            try {
+                callback(null, JSON.parse(stdout));
+                return;
+            } catch (e) {
+                err = e;
+            }
+        } else {
+            err.stdout = stdout;
+            err.stderr = stderr;
+        }
+        callback(err);
+    });
+}
+
 // returns an sdc-client or restify handle for the API after finding the API
 // endpoint for you.
 function createClient(api, callback) {
@@ -184,11 +203,11 @@ function createClient(api, callback) {
         case 'SAPI':
             handle = new sdcClients.SAPI({
                 url: 'http://' + sdc_config.sapi_admin_ips,
-                log: new logger({
+                log: bunyan.createLogger({
                     name: 'sdc-server',
                     stream: process.stderr,
                     level: 'error',
-                    serializers: logger.stdSerializers
+                    serializers: bunyan.stdSerializers
                     }),
                 version: '~2',
                 agent: false
@@ -1103,9 +1122,17 @@ function setServerKernelArg(server_uuid, name, value, callback)
     assert.func(callback, 'callback');
 
     var cnapi;
+    var hn_uuid;
 
     vasync.pipeline({ 'funcs': [
-        function createCNAPIClient(_, cb) {
+        function getHNSysinfo(_, cb) {
+            HNSysinfo(function (err, sysinfo) {
+                if (!err) {
+                    hn_uuid = sysinfo.UUID;
+                }
+                cb(err);
+            });
+        }, function createCNAPIClient(_, cb) {
             createClient('CNAPI', function (err, handle) {
                 if (!err) {
                     cnapi = handle;
@@ -1115,22 +1142,20 @@ function setServerKernelArg(server_uuid, name, value, callback)
                 cb(err);
             });
         }, function setKernelArg(_, cb) {
-            cnapi.listServers({ uuids: server_uuid }, function (err, servers) {
+            cnapi.getServer(server_uuid, function (err, server) {
                 if (err) {
                     err.api = 'CNAPI';
                     cb(err);
                     return;
                 }
 
-                if (servers.length !== 1) {
-                    cb(new Error('unknown server ' + server_uuid));
-                    return;
-                }
-
-                var server = servers[0];
-
                 if (server.headnode) {
-                    usbkey.set_variable(name, value, cb);
+                    if (server.sysinfo.UUID === hn_uuid) {
+                        usbkey.set_variable(name, value, cb);
+                    } else {
+                        cb(new Error('sdc-server must be run locally ' +
+                            'for headnode ' + server.sysinfo.UUID));
+                    }
                 } else {
                     var params = { kernel_args: {} };
                     params.kernel_args[name] = value;
@@ -1226,7 +1251,6 @@ function getSAPIParam(name, default_value, callback)
 
     var sapi;
     var app;
-    var svc;
 
     vasync.pipeline({ 'funcs': [
         function createSAPIClient(_, cb) {
@@ -1247,24 +1271,18 @@ function getSAPIParam(name, default_value, callback)
         }, function getCnapiService(_, cb) {
             var searchOpts = { name: 'cnapi', application_uuid: app.uuid };
             sapi.listServices(searchOpts, function (err, svcs) {
-                if (!err)
-                    svc = svcs[0];
-                cb(err);
-            });
-        }, function getServiceMetadata(_, cb) {
-            sapi.getService(svc.uuid, function (err, service) {
                 if (err) {
-                    err.api = 'SAPI';
+                    cb(err);
+                    return;
+                }
+                var value = svcs[0].metadata[name];
+                if (value !== undefined) {
+                    console.log(value);
                 } else {
-                    var value = service.metadata[name];
-                    if (typeof (value) !== 'undefined') {
-                        console.log(value);
-                    } else {
-                        console.log(default_value);
-                    }
+                    console.log(default_value);
                 }
 
-                cb(err);
+                cb();
             });
         }
     ]}, callback);
@@ -1277,9 +1295,17 @@ function getServerKernelArg(server_uuid, name, sapi_param, callback)
     assert.func(callback, 'callback');
 
     var cnapi;
+    var hn_uuid;
 
     vasync.pipeline({ 'funcs': [
-        function createCNAPIClient(_, cb) {
+        function getHNSysinfo(_, cb) {
+            HNSysinfo(function (err, sysinfo) {
+                if (!err) {
+                    hn_uuid = sysinfo.UUID;
+                }
+                cb(err);
+            });
+        }, function createCNAPIClient(_, cb) {
             createClient('CNAPI', function (err, handle) {
                 if (!err) {
                     cnapi = handle;
@@ -1289,32 +1315,31 @@ function getServerKernelArg(server_uuid, name, sapi_param, callback)
                 cb(err);
             });
         }, function getKernelArg(_, cb) {
-            cnapi.listServers({ uuids: server_uuid }, function (err, servers) {
+            cnapi.getServer(server_uuid, function (err, server) {
                 if (err) {
                     err.api = 'CNAPI';
                     cb(err);
                     return;
                 }
 
-                if (servers.length !== 1) {
-                    cb(new Error('unknown server ' + server_uuid));
-                    return;
-                }
-
-                var server = servers[0];
-
                 if (server.headnode) {
-                    usbkey.get_variable(name, function (err, value) {
-                        if (!err) {
-                            if (value !== null) {
-                                console.log(value);
-                            } else {
-                                console.log('unset');
+                    if (server.sysinfo.UUID === hn_uuid) {
+                        usbkey.get_variable(name, function (err, value) {
+                            if (!err) {
+                                if (value !== null) {
+                                    console.log(value);
+                                } else {
+                                    err = new Error('variable "' + name +
+                                       '" is not set');
+                                }
                             }
-                        }
 
-                        cb(err);
-                    });
+                            cb(err);
+                        });
+                    } else {
+                        cb(new Error('sdc-server must be run locally ' +
+                            'for headnode ' + server.sysinfo.UUID));
+                    }
 
                     return;
                 }
@@ -1327,7 +1352,7 @@ function getServerKernelArg(server_uuid, name, sapi_param, callback)
                     }
 
                     var value = params.kernel_args[name];
-                    if (typeof (value) !== 'undefined') {
+                    if (value !== undefined) {
                         console.log(value);
                         cb();
                         return;
